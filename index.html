@@ -205,13 +205,12 @@
             height: 100vh;
             background: #000;
             z-index: 9999;
-            justify-content: center;
+            flex-direction: row;
             padding: 0;
             margin: 0;
         }
 
         body.zoomed h1,
-        body.zoomed #score,
         body.zoomed .controls,
         body.zoomed #resetBtn,
         body.zoomed #backBtn,
@@ -219,31 +218,45 @@
             display: none;
         }
 
+        /* Side scoreboard for mobile fullscreen */
+        body.zoomed #score {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(102, 126, 234, 0.9);
+            padding: 20px 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: white;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            min-width: 60px;
+            order: -1;
+        }
+
         body.zoomed #gameCanvas {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            flex: 1;
             max-width: none;
             max-height: 100vh;
             border: none;
             border-radius: 0;
+            height: 100vh;
         }
 
         /* Landscape mode (desktop or landscape mobile) */
         @media (min-width: 769px), (orientation: landscape) {
+            body.zoomed #gameScreen {
+                justify-content: center;
+            }
+
             body.zoomed #gameCanvas {
                 width: auto;
                 height: 100vh;
             }
-        }
 
-        /* Portrait mode (mobile) */
-        @media (max-width: 768px) and (orientation: portrait) {
-            body.zoomed #gameCanvas {
-                width: 100vw;
-                height: auto;
-                max-height: none;
+            body.zoomed #score {
+                display: none;
             }
         }
     </style>
@@ -336,20 +349,20 @@
             paddleSpeed = 6;
         }
 
-        // Player paddle (top for mobile, left for desktop)
+        // Player paddle (bottom for mobile, left for desktop)
         const player = {
             x: isMobile ? canvas.width / 2 - paddleWidth / 2 : 20,
-            y: isMobile ? 20 : canvas.height / 2 - paddleHeight / 2,
+            y: isMobile ? canvas.height - 20 - paddleHeight : canvas.height / 2 - paddleHeight / 2,
             width: paddleWidth,
             height: paddleHeight,
             dy: 0,
             score: 0
         };
 
-        // Player 2 paddle (bottom for mobile, right for desktop)
+        // Player 2 paddle (top for mobile - AI, right for desktop)
         const player2 = {
             x: isMobile ? canvas.width / 2 - paddleWidth / 2 : canvas.width - 20 - paddleWidth,
-            y: isMobile ? canvas.height - 20 - paddleHeight : canvas.height / 2 - paddleHeight / 2,
+            y: isMobile ? 20 : canvas.height / 2 - paddleHeight / 2,
             width: paddleWidth,
             height: paddleHeight,
             dy: 0,
@@ -472,19 +485,7 @@
                     const threshold = 10;
 
                     if (touchData.isTopHalf) {
-                        // Top half controls player 1
-                        if (deltaX < -threshold) {
-                            keys.player1Up = true;
-                            keys.player1Down = false;
-                        } else if (deltaX > threshold) {
-                            keys.player1Down = true;
-                            keys.player1Up = false;
-                        } else {
-                            keys.player1Up = false;
-                            keys.player1Down = false;
-                        }
-                    } else {
-                        // Bottom half controls player 2
+                        // Top half controls player 2 (AI)
                         if (gameMode === 'player') {
                             if (deltaX < -threshold) {
                                 keys.player2Up = true;
@@ -496,6 +497,18 @@
                                 keys.player2Up = false;
                                 keys.player2Down = false;
                             }
+                        }
+                    } else {
+                        // Bottom half controls player 1 (human player)
+                        if (deltaX < -threshold) {
+                            keys.player1Up = true;
+                            keys.player1Down = false;
+                        } else if (deltaX > threshold) {
+                            keys.player1Down = true;
+                            keys.player1Up = false;
+                        } else {
+                            keys.player1Up = false;
+                            keys.player1Down = false;
                         }
                     }
                 } else {
@@ -545,11 +558,11 @@
                 if (touchData) {
                     if (isMobile) {
                         if (touchData.isTopHalf) {
-                            keys.player1Up = false;
-                            keys.player1Down = false;
-                        } else {
                             keys.player2Up = false;
                             keys.player2Down = false;
+                        } else {
+                            keys.player1Up = false;
+                            keys.player1Down = false;
                         }
                     } else {
                         if (touchData.isLeftHalf) {
@@ -730,12 +743,12 @@
             const tolerance = 10; // Dead zone to prevent jittering
 
             if (isMobile) {
-                // Portrait mode: AI moves left/right
+                // Portrait mode: AI moves left/right (AI is at top)
                 const paddleCenter = player2.x + player2.width / 2;
                 const ballCenter = ball.x;
 
-                // Only move if ball is moving towards AI (downward)
-                if (ball.dy > 0) {
+                // Only move if ball is moving towards AI (upward - negative dy)
+                if (ball.dy < 0) {
                     if (ballCenter < paddleCenter - tolerance && player2.x > 0) {
                         player2.x -= aiSpeed;
                     } else if (ballCenter > paddleCenter + tolerance && player2.x + player2.width < canvas.width) {
@@ -787,27 +800,27 @@
                     ball.dx *= -1;
                 }
 
-                // Player 1 paddle collision (top)
-                if (ball.y - ball.radius < player.y + player.height &&
-                    ball.x > player.x &&
-                    ball.x < player.x + player.width &&
+                // Player 2 paddle collision (top - AI)
+                if (ball.y - ball.radius < player2.y + player2.height &&
+                    ball.x > player2.x &&
+                    ball.x < player2.x + player2.width &&
                     ball.dy < 0) {
 
                     // Calculate where ball hit the paddle (horizontally)
-                    let hitPos = (ball.x - (player.x + player.width / 2)) / (player.width / 2);
+                    let hitPos = (ball.x - (player2.x + player2.width / 2)) / (player2.width / 2);
                     ball.dx = hitPos * 5;
                     ball.dy *= -1;
                     ball.speed += 0.2; // Increase speed slightly
                     ball.dy = ball.dy > 0 ? ball.speed : -ball.speed;
                 }
 
-                // Player 2 paddle collision (bottom)
-                if (ball.y + ball.radius > player2.y &&
-                    ball.x > player2.x &&
-                    ball.x < player2.x + player2.width &&
+                // Player 1 paddle collision (bottom - human player)
+                if (ball.y + ball.radius > player.y &&
+                    ball.x > player.x &&
+                    ball.x < player.x + player.width &&
                     ball.dy > 0) {
 
-                    let hitPos = (ball.x - (player2.x + player2.width / 2)) / (player2.width / 2);
+                    let hitPos = (ball.x - (player.x + player.width / 2)) / (player.width / 2);
                     ball.dx = hitPos * 5;
                     ball.dy *= -1;
                     ball.speed += 0.2;
@@ -815,11 +828,14 @@
                 }
 
                 // Score points (top/bottom)
+                // Player 1 is at bottom, Player 2 is at top
                 if (ball.y - ball.radius < 0) {
-                    player2.score++;
+                    // Ball went off top - Player 1 (bottom) scores
+                    player.score++;
                     resetBall();
                 } else if (ball.y + ball.radius > canvas.height) {
-                    player.score++;
+                    // Ball went off bottom - Player 2 (top) scores
+                    player2.score++;
                     resetBall();
                 }
 
@@ -909,9 +925,9 @@
             if (isMobile) {
                 // Portrait mode: reset paddles to center horizontally
                 player.x = canvas.width / 2 - paddleWidth / 2;
-                player.y = 20;
+                player.y = canvas.height - 20 - paddleHeight;
                 player2.x = canvas.width / 2 - paddleWidth / 2;
-                player2.y = canvas.height - 20 - paddleHeight;
+                player2.y = 20;
             } else {
                 // Landscape mode: reset paddles to center vertically
                 player.x = 20;
@@ -949,12 +965,17 @@
             if (isMobile) {
                 // Portrait mode text
                 if (mode === 'ai') {
-                    controlsText.textContent = 'Touch top half and swipe left/right to control | Tap to start';
+                    controlsText.textContent = 'Touch bottom half and swipe left/right to control | Tap to start';
                     scoreDisplay.textContent = 'Player: 0 | AI: 0';
                 } else {
-                    controlsText.textContent = 'Touch top/bottom half and swipe left/right | Tap to start';
+                    controlsText.textContent = 'Touch bottom (Player 1) or top (Player 2) and swipe left/right | Tap to start';
                     scoreDisplay.textContent = 'Player 1: 0 | Player 2: 0';
                 }
+
+                // Auto-enter fullscreen on mobile
+                setTimeout(() => {
+                    document.body.classList.add('zoomed');
+                }, 100);
             } else {
                 // Landscape mode text
                 if (mode === 'ai') {
@@ -975,6 +996,11 @@
             gameMode = null;
             menuScreen.style.display = 'block';
             gameScreen.style.display = 'none';
+
+            // Exit fullscreen when returning to menu
+            if (isMobile) {
+                document.body.classList.remove('zoomed');
+            }
 
             resetGame();
         }

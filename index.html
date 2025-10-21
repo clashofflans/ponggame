@@ -132,7 +132,7 @@
             display: none;
             width: 100%;
             max-width: 800px;
-            height: 120px;
+            height: 150px;
             margin-top: 15px;
             gap: 10px;
         }
@@ -141,23 +141,31 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 5px;
-        }
-
-        .touch-btn {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.2);
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
             border: 2px solid white;
-            border-radius: 5px;
+            border-radius: 10px;
             color: white;
-            font-size: 1.2em;
+            font-size: 1em;
             font-weight: bold;
             touch-action: none;
             user-select: none;
+            position: relative;
         }
 
-        .touch-btn:active {
-            background: rgba(255, 255, 255, 0.4);
+        .touch-area:active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .touch-label {
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .touch-instruction {
+            font-size: 0.8em;
+            opacity: 0.8;
         }
 
         /* Mobile responsive styles */
@@ -243,13 +251,13 @@
             <p>Press Space to start/pause</p>
         </div>
         <div id="touchControls">
-            <div class="touch-area">
-                <button class="touch-btn" id="leftUp">▲</button>
-                <button class="touch-btn" id="leftDown">▼</button>
+            <div class="touch-area" id="leftTouchArea">
+                <div class="touch-label">Player 1</div>
+                <div class="touch-instruction">Swipe Up/Down</div>
             </div>
-            <div class="touch-area" id="player2TouchArea">
-                <button class="touch-btn" id="rightUp">▲</button>
-                <button class="touch-btn" id="rightDown">▼</button>
+            <div class="touch-area" id="rightTouchArea">
+                <div class="touch-label">Player 2</div>
+                <div class="touch-instruction">Swipe Up/Down</div>
             </div>
         </div>
         <button id="resetBtn">Reset Game</button>
@@ -267,13 +275,14 @@
         const vsAIBtn = document.getElementById('vsAIBtn');
         const backBtn = document.getElementById('backBtn');
         const controlsText = document.getElementById('controlsText');
-        const player2TouchArea = document.getElementById('player2TouchArea');
+        const leftTouchArea = document.getElementById('leftTouchArea');
+        const rightTouchArea = document.getElementById('rightTouchArea');
 
-        // Touch control buttons
-        const leftUp = document.getElementById('leftUp');
-        const leftDown = document.getElementById('leftDown');
-        const rightUp = document.getElementById('rightUp');
-        const rightDown = document.getElementById('rightDown');
+        // Touch tracking
+        const touchState = {
+            left: { active: false, startY: 0, currentY: 0 },
+            right: { active: false, startY: 0, currentY: 0 }
+        };
 
         // Game variables
         let gameRunning = false;
@@ -367,51 +376,98 @@
 
         resetBtn.addEventListener('click', resetGame);
 
-        // Touch event listeners
+        // Touch event listeners with swipe gesture support
         function addTouchListeners() {
-            // Left paddle controls
-            leftUp.addEventListener('touchstart', (e) => {
+            // Helper function to get touch Y position relative to element
+            function getTouchY(e, element) {
+                const rect = element.getBoundingClientRect();
+                const touch = e.touches[0];
+                return touch.clientY - rect.top;
+            }
+
+            // Left paddle swipe controls
+            leftTouchArea.addEventListener('touchstart', (e) => {
                 e.preventDefault();
-                keys.player1Up = true;
-            });
-            leftUp.addEventListener('touchend', () => {
-                keys.player1Up = false;
+                touchState.left.active = true;
+                touchState.left.startY = getTouchY(e, leftTouchArea);
+                touchState.left.currentY = touchState.left.startY;
             });
 
-            leftDown.addEventListener('touchstart', (e) => {
+            leftTouchArea.addEventListener('touchmove', (e) => {
                 e.preventDefault();
-                keys.player1Down = true;
+                if (touchState.left.active) {
+                    const rect = leftTouchArea.getBoundingClientRect();
+                    const touch = e.touches[0];
+                    const relativeY = touch.clientY - rect.top;
+                    const centerY = rect.height / 2;
+
+                    // Determine direction based on touch position relative to center
+                    if (relativeY < centerY - 20) {
+                        keys.player1Up = true;
+                        keys.player1Down = false;
+                    } else if (relativeY > centerY + 20) {
+                        keys.player1Down = true;
+                        keys.player1Up = false;
+                    } else {
+                        keys.player1Up = false;
+                        keys.player1Down = false;
+                    }
+                }
             });
-            leftDown.addEventListener('touchend', () => {
+
+            leftTouchArea.addEventListener('touchend', () => {
+                touchState.left.active = false;
+                keys.player1Up = false;
                 keys.player1Down = false;
             });
 
-            // Right paddle controls (for vs player mode)
-            rightUp.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                keys.player2Up = true;
-            });
-            rightUp.addEventListener('touchend', () => {
-                keys.player2Up = false;
+            leftTouchArea.addEventListener('touchcancel', () => {
+                touchState.left.active = false;
+                keys.player1Up = false;
+                keys.player1Down = false;
             });
 
-            rightDown.addEventListener('touchstart', (e) => {
+            // Right paddle swipe controls
+            rightTouchArea.addEventListener('touchstart', (e) => {
                 e.preventDefault();
-                keys.player2Down = true;
+                touchState.right.active = true;
+                touchState.right.startY = getTouchY(e, rightTouchArea);
+                touchState.right.currentY = touchState.right.startY;
             });
-            rightDown.addEventListener('touchend', () => {
+
+            rightTouchArea.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (touchState.right.active) {
+                    const rect = rightTouchArea.getBoundingClientRect();
+                    const touch = e.touches[0];
+                    const relativeY = touch.clientY - rect.top;
+                    const centerY = rect.height / 2;
+
+                    // Determine direction based on touch position relative to center
+                    if (relativeY < centerY - 20) {
+                        keys.player2Up = true;
+                        keys.player2Down = false;
+                    } else if (relativeY > centerY + 20) {
+                        keys.player2Down = true;
+                        keys.player2Up = false;
+                    } else {
+                        keys.player2Up = false;
+                        keys.player2Down = false;
+                    }
+                }
+            });
+
+            rightTouchArea.addEventListener('touchend', () => {
+                touchState.right.active = false;
+                keys.player2Up = false;
                 keys.player2Down = false;
             });
 
-            // Also handle mouse events for desktop testing
-            leftUp.addEventListener('mousedown', () => keys.player1Up = true);
-            leftUp.addEventListener('mouseup', () => keys.player1Up = false);
-            leftDown.addEventListener('mousedown', () => keys.player1Down = true);
-            leftDown.addEventListener('mouseup', () => keys.player1Down = false);
-            rightUp.addEventListener('mousedown', () => keys.player2Up = true);
-            rightUp.addEventListener('mouseup', () => keys.player2Up = false);
-            rightDown.addEventListener('mousedown', () => keys.player2Down = true);
-            rightDown.addEventListener('mouseup', () => keys.player2Down = false);
+            rightTouchArea.addEventListener('touchcancel', () => {
+                touchState.right.active = false;
+                keys.player2Up = false;
+                keys.player2Down = false;
+            });
         }
 
         // Initialize touch controls
@@ -644,13 +700,13 @@
 
             // Update controls text and touch controls based on mode
             if (mode === 'ai') {
-                controlsText.textContent = 'Player: W/S or Arrow Up/Down keys | Touch controls or tap canvas to start';
+                controlsText.textContent = 'Player: W/S or Arrow Up/Down keys | Swipe to control or tap canvas to start';
                 scoreDisplay.textContent = 'Player: 0 | AI: 0';
-                player2TouchArea.style.display = 'none'; // Hide right controls in AI mode
+                rightTouchArea.style.display = 'none'; // Hide right controls in AI mode
             } else {
-                controlsText.textContent = 'Player 1 (Left): W/S keys | Player 2 (Right): Arrow Up/Down or I/K keys | Touch controls or tap canvas to start';
+                controlsText.textContent = 'Player 1 (Left): W/S keys | Player 2 (Right): Arrow Up/Down or I/K keys | Swipe to control or tap canvas to start';
                 scoreDisplay.textContent = 'Player 1: 0 | Player 2: 0';
-                player2TouchArea.style.display = 'flex'; // Show right controls in vs player mode
+                rightTouchArea.style.display = 'flex'; // Show right controls in vs player mode
             }
 
             resetGame();

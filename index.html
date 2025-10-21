@@ -145,6 +145,20 @@
             height: 150px;
             margin-top: 15px;
             gap: 10px;
+            flex-direction: row;
+        }
+
+        @media (max-width: 768px) {
+            #touchControls {
+                flex-direction: column;
+                height: auto;
+                max-width: 400px;
+            }
+
+            .touch-area {
+                height: 80px;
+                width: 100%;
+            }
         }
 
         .touch-area {
@@ -276,10 +290,25 @@
             transform: translate(-50%, -50%);
             max-width: none;
             max-height: 100vh;
-            width: auto;
-            height: 100vh;
             border: none;
             border-radius: 0;
+        }
+
+        /* Landscape mode (desktop or landscape mobile) */
+        @media (min-width: 769px), (orientation: landscape) {
+            body.zoomed #gameCanvas {
+                width: auto;
+                height: 100vh;
+            }
+        }
+
+        /* Portrait mode (mobile) */
+        @media (max-width: 768px) and (orientation: portrait) {
+            body.zoomed #gameCanvas {
+                width: 100vw;
+                height: auto;
+                max-height: none;
+            }
         }
 
         body.zoomed #fullscreenBtn {
@@ -307,7 +336,7 @@
 
     <!-- Game Screen -->
     <div id="gameScreen">
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <canvas id="gameCanvas"></canvas>
         <div id="score">Player 1: 0 | Player 2: 0</div>
         <div class="controls">
             <p id="controlsText">Player 1 (Left): W/S keys | Player 2 (Right): Arrow Up/Down or I/K keys</p>
@@ -343,10 +372,24 @@
         const leftTouchArea = document.getElementById('leftTouchArea');
         const rightTouchArea = document.getElementById('rightTouchArea');
 
+        // Mobile detection
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+
+        // Set canvas dimensions based on device
+        if (isMobile) {
+            // Portrait mode for mobile
+            canvas.width = 400;
+            canvas.height = 700;
+        } else {
+            // Landscape mode for desktop
+            canvas.width = 800;
+            canvas.height = 600;
+        }
+
         // Touch tracking
         const touchState = {
-            left: { active: false, startY: 0, currentY: 0 },
-            right: { active: false, startY: 0, currentY: 0 }
+            left: { active: false, startY: 0, currentY: 0, startX: 0, currentX: 0 },
+            right: { active: false, startY: 0, currentY: 0, startX: 0, currentX: 0 }
         };
 
         // Game variables
@@ -354,25 +397,35 @@
         let animationId;
         let gameMode = null; // 'player' or 'ai'
 
-        // Paddle properties
-        const paddleWidth = 10;
-        const paddleHeight = 100;
-        const paddleSpeed = 6;
+        // Paddle properties - different for mobile (portrait) vs desktop (landscape)
+        let paddleWidth, paddleHeight, paddleSpeed;
 
-        // Player paddle (left)
+        if (isMobile) {
+            // Portrait mode: paddles are horizontal (wider than tall)
+            paddleWidth = 100;
+            paddleHeight = 10;
+            paddleSpeed = 6;
+        } else {
+            // Landscape mode: paddles are vertical (taller than wide)
+            paddleWidth = 10;
+            paddleHeight = 100;
+            paddleSpeed = 6;
+        }
+
+        // Player paddle (top for mobile, left for desktop)
         const player = {
-            x: 20,
-            y: canvas.height / 2 - paddleHeight / 2,
+            x: isMobile ? canvas.width / 2 - paddleWidth / 2 : 20,
+            y: isMobile ? 20 : canvas.height / 2 - paddleHeight / 2,
             width: paddleWidth,
             height: paddleHeight,
             dy: 0,
             score: 0
         };
 
-        // Player 2 paddle (right)
+        // Player 2 paddle (bottom for mobile, right for desktop)
         const player2 = {
-            x: canvas.width - 20 - paddleWidth,
-            y: canvas.height / 2 - paddleHeight / 2,
+            x: isMobile ? canvas.width / 2 - paddleWidth / 2 : canvas.width - 20 - paddleWidth,
+            y: isMobile ? canvas.height - 20 - paddleHeight : canvas.height / 2 - paddleHeight / 2,
             width: paddleWidth,
             height: paddleHeight,
             dy: 0,
@@ -443,96 +496,193 @@
 
         // Touch event listeners with swipe gesture support
         function addTouchListeners() {
-            // Helper function to get touch Y position relative to element
-            function getTouchY(e, element) {
-                const rect = element.getBoundingClientRect();
-                const touch = e.touches[0];
-                return touch.clientY - rect.top;
+            if (isMobile) {
+                // Portrait mode: horizontal touch controls
+                // Helper function to get touch X position relative to element
+                function getTouchX(e, element) {
+                    const rect = element.getBoundingClientRect();
+                    const touch = e.touches[0];
+                    return touch.clientX - rect.left;
+                }
+
+                // Top paddle (player 1) swipe controls
+                leftTouchArea.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    touchState.left.active = true;
+                    touchState.left.startX = getTouchX(e, leftTouchArea);
+                    touchState.left.currentX = touchState.left.startX;
+                });
+
+                leftTouchArea.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    if (touchState.left.active) {
+                        const rect = leftTouchArea.getBoundingClientRect();
+                        const touch = e.touches[0];
+                        const relativeX = touch.clientX - rect.left;
+                        const centerX = rect.width / 2;
+
+                        // Determine direction based on touch position relative to center
+                        // Up = left, Down = right
+                        if (relativeX < centerX - 20) {
+                            keys.player1Up = true;
+                            keys.player1Down = false;
+                        } else if (relativeX > centerX + 20) {
+                            keys.player1Down = true;
+                            keys.player1Up = false;
+                        } else {
+                            keys.player1Up = false;
+                            keys.player1Down = false;
+                        }
+                    }
+                });
+
+                leftTouchArea.addEventListener('touchend', () => {
+                    touchState.left.active = false;
+                    keys.player1Up = false;
+                    keys.player1Down = false;
+                });
+
+                leftTouchArea.addEventListener('touchcancel', () => {
+                    touchState.left.active = false;
+                    keys.player1Up = false;
+                    keys.player1Down = false;
+                });
+
+                // Bottom paddle (player 2) swipe controls
+                rightTouchArea.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    touchState.right.active = true;
+                    touchState.right.startX = getTouchX(e, rightTouchArea);
+                    touchState.right.currentX = touchState.right.startX;
+                });
+
+                rightTouchArea.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    if (touchState.right.active) {
+                        const rect = rightTouchArea.getBoundingClientRect();
+                        const touch = e.touches[0];
+                        const relativeX = touch.clientX - rect.left;
+                        const centerX = rect.width / 2;
+
+                        // Determine direction based on touch position relative to center
+                        // Up = left, Down = right
+                        if (relativeX < centerX - 20) {
+                            keys.player2Up = true;
+                            keys.player2Down = false;
+                        } else if (relativeX > centerX + 20) {
+                            keys.player2Down = true;
+                            keys.player2Up = false;
+                        } else {
+                            keys.player2Up = false;
+                            keys.player2Down = false;
+                        }
+                    }
+                });
+
+                rightTouchArea.addEventListener('touchend', () => {
+                    touchState.right.active = false;
+                    keys.player2Up = false;
+                    keys.player2Down = false;
+                });
+
+                rightTouchArea.addEventListener('touchcancel', () => {
+                    touchState.right.active = false;
+                    keys.player2Up = false;
+                    keys.player2Down = false;
+                });
+            } else {
+                // Landscape mode: vertical touch controls
+                // Helper function to get touch Y position relative to element
+                function getTouchY(e, element) {
+                    const rect = element.getBoundingClientRect();
+                    const touch = e.touches[0];
+                    return touch.clientY - rect.top;
+                }
+
+                // Left paddle swipe controls
+                leftTouchArea.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    touchState.left.active = true;
+                    touchState.left.startY = getTouchY(e, leftTouchArea);
+                    touchState.left.currentY = touchState.left.startY;
+                });
+
+                leftTouchArea.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    if (touchState.left.active) {
+                        const rect = leftTouchArea.getBoundingClientRect();
+                        const touch = e.touches[0];
+                        const relativeY = touch.clientY - rect.top;
+                        const centerY = rect.height / 2;
+
+                        // Determine direction based on touch position relative to center
+                        if (relativeY < centerY - 20) {
+                            keys.player1Up = true;
+                            keys.player1Down = false;
+                        } else if (relativeY > centerY + 20) {
+                            keys.player1Down = true;
+                            keys.player1Up = false;
+                        } else {
+                            keys.player1Up = false;
+                            keys.player1Down = false;
+                        }
+                    }
+                });
+
+                leftTouchArea.addEventListener('touchend', () => {
+                    touchState.left.active = false;
+                    keys.player1Up = false;
+                    keys.player1Down = false;
+                });
+
+                leftTouchArea.addEventListener('touchcancel', () => {
+                    touchState.left.active = false;
+                    keys.player1Up = false;
+                    keys.player1Down = false;
+                });
+
+                // Right paddle swipe controls
+                rightTouchArea.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    touchState.right.active = true;
+                    touchState.right.startY = getTouchY(e, rightTouchArea);
+                    touchState.right.currentY = touchState.right.startY;
+                });
+
+                rightTouchArea.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    if (touchState.right.active) {
+                        const rect = rightTouchArea.getBoundingClientRect();
+                        const touch = e.touches[0];
+                        const relativeY = touch.clientY - rect.top;
+                        const centerY = rect.height / 2;
+
+                        // Determine direction based on touch position relative to center
+                        if (relativeY < centerY - 20) {
+                            keys.player2Up = true;
+                            keys.player2Down = false;
+                        } else if (relativeY > centerY + 20) {
+                            keys.player2Down = true;
+                            keys.player2Up = false;
+                        } else {
+                            keys.player2Up = false;
+                            keys.player2Down = false;
+                        }
+                    }
+                });
+
+                rightTouchArea.addEventListener('touchend', () => {
+                    touchState.right.active = false;
+                    keys.player2Up = false;
+                    keys.player2Down = false;
+                });
+
+                rightTouchArea.addEventListener('touchcancel', () => {
+                    touchState.right.active = false;
+                    keys.player2Up = false;
+                    keys.player2Down = false;
+                });
             }
-
-            // Left paddle swipe controls
-            leftTouchArea.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                touchState.left.active = true;
-                touchState.left.startY = getTouchY(e, leftTouchArea);
-                touchState.left.currentY = touchState.left.startY;
-            });
-
-            leftTouchArea.addEventListener('touchmove', (e) => {
-                e.preventDefault();
-                if (touchState.left.active) {
-                    const rect = leftTouchArea.getBoundingClientRect();
-                    const touch = e.touches[0];
-                    const relativeY = touch.clientY - rect.top;
-                    const centerY = rect.height / 2;
-
-                    // Determine direction based on touch position relative to center
-                    if (relativeY < centerY - 20) {
-                        keys.player1Up = true;
-                        keys.player1Down = false;
-                    } else if (relativeY > centerY + 20) {
-                        keys.player1Down = true;
-                        keys.player1Up = false;
-                    } else {
-                        keys.player1Up = false;
-                        keys.player1Down = false;
-                    }
-                }
-            });
-
-            leftTouchArea.addEventListener('touchend', () => {
-                touchState.left.active = false;
-                keys.player1Up = false;
-                keys.player1Down = false;
-            });
-
-            leftTouchArea.addEventListener('touchcancel', () => {
-                touchState.left.active = false;
-                keys.player1Up = false;
-                keys.player1Down = false;
-            });
-
-            // Right paddle swipe controls
-            rightTouchArea.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                touchState.right.active = true;
-                touchState.right.startY = getTouchY(e, rightTouchArea);
-                touchState.right.currentY = touchState.right.startY;
-            });
-
-            rightTouchArea.addEventListener('touchmove', (e) => {
-                e.preventDefault();
-                if (touchState.right.active) {
-                    const rect = rightTouchArea.getBoundingClientRect();
-                    const touch = e.touches[0];
-                    const relativeY = touch.clientY - rect.top;
-                    const centerY = rect.height / 2;
-
-                    // Determine direction based on touch position relative to center
-                    if (relativeY < centerY - 20) {
-                        keys.player2Up = true;
-                        keys.player2Down = false;
-                    } else if (relativeY > centerY + 20) {
-                        keys.player2Down = true;
-                        keys.player2Up = false;
-                    } else {
-                        keys.player2Up = false;
-                        keys.player2Down = false;
-                    }
-                }
-            });
-
-            rightTouchArea.addEventListener('touchend', () => {
-                touchState.right.active = false;
-                keys.player2Up = false;
-                keys.player2Down = false;
-            });
-
-            rightTouchArea.addEventListener('touchcancel', () => {
-                touchState.right.active = false;
-                keys.player2Up = false;
-                keys.player2Down = false;
-            });
         }
 
         // Initialize touch controls
@@ -548,21 +698,39 @@
 
         // Responsive canvas sizing
         function resizeCanvas() {
-            const maxWidth = Math.min(800, window.innerWidth - 40);
-            const maxHeight = Math.min(600, window.innerHeight - 400);
-            const aspectRatio = 800 / 600;
+            if (isMobile) {
+                // Portrait mode: 400x700 aspect ratio
+                const maxWidth = Math.min(400, window.innerWidth - 20);
+                const maxHeight = Math.min(700, window.innerHeight - 200);
+                const aspectRatio = 400 / 700;
 
-            let newWidth = maxWidth;
-            let newHeight = newWidth / aspectRatio;
+                let newWidth = maxWidth;
+                let newHeight = newWidth / aspectRatio;
 
-            if (newHeight > maxHeight) {
-                newHeight = maxHeight;
-                newWidth = newHeight * aspectRatio;
+                if (newHeight > maxHeight) {
+                    newHeight = maxHeight;
+                    newWidth = newHeight * aspectRatio;
+                }
+
+                canvas.style.width = newWidth + 'px';
+                canvas.style.height = newHeight + 'px';
+            } else {
+                // Landscape mode: 800x600 aspect ratio
+                const maxWidth = Math.min(800, window.innerWidth - 40);
+                const maxHeight = Math.min(600, window.innerHeight - 400);
+                const aspectRatio = 800 / 600;
+
+                let newWidth = maxWidth;
+                let newHeight = newWidth / aspectRatio;
+
+                if (newHeight > maxHeight) {
+                    newHeight = maxHeight;
+                    newWidth = newHeight * aspectRatio;
+                }
+
+                canvas.style.width = newWidth + 'px';
+                canvas.style.height = newHeight + 'px';
             }
-
-            // Store scale for proper collision detection
-            canvas.style.width = newWidth + 'px';
-            canvas.style.height = newHeight + 'px';
         }
 
         // Initial resize and add listener
@@ -588,12 +756,24 @@
         }
 
         function drawNet() {
-            const netWidth = 4;
-            const netHeight = 10;
-            const gap = 15;
+            if (isMobile) {
+                // Portrait mode: horizontal net
+                const netWidth = 10;
+                const netHeight = 4;
+                const gap = 15;
 
-            for (let i = 0; i < canvas.height; i += netHeight + gap) {
-                drawRect(canvas.width / 2 - netWidth / 2, i, netWidth, netHeight, '#444');
+                for (let i = 0; i < canvas.width; i += netWidth + gap) {
+                    drawRect(i, canvas.height / 2 - netHeight / 2, netWidth, netHeight, '#444');
+                }
+            } else {
+                // Landscape mode: vertical net
+                const netWidth = 4;
+                const netHeight = 10;
+                const gap = 15;
+
+                for (let i = 0; i < canvas.height; i += netHeight + gap) {
+                    drawRect(canvas.width / 2 - netWidth / 2, i, netWidth, netHeight, '#444');
+                }
             }
         }
 
@@ -614,11 +794,22 @@
 
         // Update player 1 paddle
         function updatePlayer() {
-            if (keys.player1Up && player.y > 0) {
-                player.y -= paddleSpeed;
-            }
-            if (keys.player1Down && player.y + player.height < canvas.height) {
-                player.y += paddleSpeed;
+            if (isMobile) {
+                // Portrait mode: move left/right
+                if (keys.player1Up && player.x > 0) {
+                    player.x -= paddleSpeed;
+                }
+                if (keys.player1Down && player.x + player.width < canvas.width) {
+                    player.x += paddleSpeed;
+                }
+            } else {
+                // Landscape mode: move up/down
+                if (keys.player1Up && player.y > 0) {
+                    player.y -= paddleSpeed;
+                }
+                if (keys.player1Down && player.y + player.height < canvas.height) {
+                    player.y += paddleSpeed;
+                }
             }
         }
 
@@ -627,36 +818,72 @@
             if (gameMode === 'ai') {
                 updateAI();
             } else {
-                if (keys.player2Up && player2.y > 0) {
-                    player2.y -= paddleSpeed;
-                }
-                if (keys.player2Down && player2.y + player2.height < canvas.height) {
-                    player2.y += paddleSpeed;
+                if (isMobile) {
+                    // Portrait mode: move left/right
+                    if (keys.player2Up && player2.x > 0) {
+                        player2.x -= paddleSpeed;
+                    }
+                    if (keys.player2Down && player2.x + player2.width < canvas.width) {
+                        player2.x += paddleSpeed;
+                    }
+                } else {
+                    // Landscape mode: move up/down
+                    if (keys.player2Up && player2.y > 0) {
+                        player2.y -= paddleSpeed;
+                    }
+                    if (keys.player2Down && player2.y + player2.height < canvas.height) {
+                        player2.y += paddleSpeed;
+                    }
                 }
             }
         }
 
         // AI controller for player 2 paddle
         function updateAI() {
-            const paddleCenter = player2.y + player2.height / 2;
-            const ballCenter = ball.y;
             const aiSpeed = paddleSpeed * 0.7; // Make AI slightly slower for fair gameplay
             const tolerance = 10; // Dead zone to prevent jittering
 
-            // Only move if ball is moving towards AI
-            if (ball.dx > 0) {
-                if (ballCenter < paddleCenter - tolerance && player2.y > 0) {
-                    player2.y -= aiSpeed;
-                } else if (ballCenter > paddleCenter + tolerance && player2.y + player2.height < canvas.height) {
-                    player2.y += aiSpeed;
+            if (isMobile) {
+                // Portrait mode: AI moves left/right
+                const paddleCenter = player2.x + player2.width / 2;
+                const ballCenter = ball.x;
+
+                // Only move if ball is moving towards AI (downward)
+                if (ball.dy > 0) {
+                    if (ballCenter < paddleCenter - tolerance && player2.x > 0) {
+                        player2.x -= aiSpeed;
+                    } else if (ballCenter > paddleCenter + tolerance && player2.x + player2.width < canvas.width) {
+                        player2.x += aiSpeed;
+                    }
+                } else {
+                    // Return to center when ball is moving away
+                    const targetX = canvas.width / 2 - player2.width / 2;
+                    if (player2.x < targetX - tolerance) {
+                        player2.x += aiSpeed * 0.5;
+                    } else if (player2.x > targetX + tolerance) {
+                        player2.x -= aiSpeed * 0.5;
+                    }
                 }
             } else {
-                // Return to center when ball is moving away
-                const targetY = canvas.height / 2 - player2.height / 2;
-                if (player2.y < targetY - tolerance) {
-                    player2.y += aiSpeed * 0.5;
-                } else if (player2.y > targetY + tolerance) {
-                    player2.y -= aiSpeed * 0.5;
+                // Landscape mode: AI moves up/down
+                const paddleCenter = player2.y + player2.height / 2;
+                const ballCenter = ball.y;
+
+                // Only move if ball is moving towards AI
+                if (ball.dx > 0) {
+                    if (ballCenter < paddleCenter - tolerance && player2.y > 0) {
+                        player2.y -= aiSpeed;
+                    } else if (ballCenter > paddleCenter + tolerance && player2.y + player2.height < canvas.height) {
+                        player2.y += aiSpeed;
+                    }
+                } else {
+                    // Return to center when ball is moving away
+                    const targetY = canvas.height / 2 - player2.height / 2;
+                    if (player2.y < targetY - tolerance) {
+                        player2.y += aiSpeed * 0.5;
+                    } else if (player2.y > targetY + tolerance) {
+                        player2.y -= aiSpeed * 0.5;
+                    }
                 }
             }
         }
@@ -666,45 +893,93 @@
             ball.x += ball.dx;
             ball.y += ball.dy;
 
-            // Top and bottom collision
-            if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
-                ball.dy *= -1;
-            }
+            if (isMobile) {
+                // Portrait mode: ball moves up/down, bounces off left/right walls
 
-            // Player paddle collision
-            if (ball.x - ball.radius < player.x + player.width &&
-                ball.y > player.y &&
-                ball.y < player.y + player.height &&
-                ball.dx < 0) {
+                // Left and right wall collision (bounce)
+                if (ball.x - ball.radius < 0 || ball.x + ball.radius > canvas.width) {
+                    ball.dx *= -1;
+                }
 
-                // Calculate where ball hit the paddle
-                let hitPos = (ball.y - (player.y + player.height / 2)) / (player.height / 2);
-                ball.dy = hitPos * 5;
-                ball.dx *= -1;
-                ball.speed += 0.2; // Increase speed slightly
-                ball.dx = ball.dx > 0 ? ball.speed : -ball.speed;
-            }
+                // Player 1 paddle collision (top)
+                if (ball.y - ball.radius < player.y + player.height &&
+                    ball.x > player.x &&
+                    ball.x < player.x + player.width &&
+                    ball.dy < 0) {
 
-            // Player 2 paddle collision
-            if (ball.x + ball.radius > player2.x &&
-                ball.y > player2.y &&
-                ball.y < player2.y + player2.height &&
-                ball.dx > 0) {
+                    // Calculate where ball hit the paddle (horizontally)
+                    let hitPos = (ball.x - (player.x + player.width / 2)) / (player.width / 2);
+                    ball.dx = hitPos * 5;
+                    ball.dy *= -1;
+                    ball.speed += 0.2; // Increase speed slightly
+                    ball.dy = ball.dy > 0 ? ball.speed : -ball.speed;
+                }
 
-                let hitPos = (ball.y - (player2.y + player2.height / 2)) / (player2.height / 2);
-                ball.dy = hitPos * 5;
-                ball.dx *= -1;
-                ball.speed += 0.2;
-                ball.dx = ball.dx > 0 ? ball.speed : -ball.speed;
-            }
+                // Player 2 paddle collision (bottom)
+                if (ball.y + ball.radius > player2.y &&
+                    ball.x > player2.x &&
+                    ball.x < player2.x + player2.width &&
+                    ball.dy > 0) {
 
-            // Score points
-            if (ball.x - ball.radius < 0) {
-                player2.score++;
-                resetBall();
-            } else if (ball.x + ball.radius > canvas.width) {
-                player.score++;
-                resetBall();
+                    let hitPos = (ball.x - (player2.x + player2.width / 2)) / (player2.width / 2);
+                    ball.dx = hitPos * 5;
+                    ball.dy *= -1;
+                    ball.speed += 0.2;
+                    ball.dy = ball.dy > 0 ? ball.speed : -ball.speed;
+                }
+
+                // Score points (top/bottom)
+                if (ball.y - ball.radius < 0) {
+                    player2.score++;
+                    resetBall();
+                } else if (ball.y + ball.radius > canvas.height) {
+                    player.score++;
+                    resetBall();
+                }
+
+            } else {
+                // Landscape mode: ball moves left/right, bounces off top/bottom walls
+
+                // Top and bottom collision (bounce)
+                if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
+                    ball.dy *= -1;
+                }
+
+                // Player paddle collision (left)
+                if (ball.x - ball.radius < player.x + player.width &&
+                    ball.y > player.y &&
+                    ball.y < player.y + player.height &&
+                    ball.dx < 0) {
+
+                    // Calculate where ball hit the paddle
+                    let hitPos = (ball.y - (player.y + player.height / 2)) / (player.height / 2);
+                    ball.dy = hitPos * 5;
+                    ball.dx *= -1;
+                    ball.speed += 0.2; // Increase speed slightly
+                    ball.dx = ball.dx > 0 ? ball.speed : -ball.speed;
+                }
+
+                // Player 2 paddle collision (right)
+                if (ball.x + ball.radius > player2.x &&
+                    ball.y > player2.y &&
+                    ball.y < player2.y + player2.height &&
+                    ball.dx > 0) {
+
+                    let hitPos = (ball.y - (player2.y + player2.height / 2)) / (player2.height / 2);
+                    ball.dy = hitPos * 5;
+                    ball.dx *= -1;
+                    ball.speed += 0.2;
+                    ball.dx = ball.dx > 0 ? ball.speed : -ball.speed;
+                }
+
+                // Score points (left/right)
+                if (ball.x - ball.radius < 0) {
+                    player2.score++;
+                    resetBall();
+                } else if (ball.x + ball.radius > canvas.width) {
+                    player.score++;
+                    resetBall();
+                }
             }
 
             updateScore();
@@ -714,8 +989,16 @@
             ball.x = canvas.width / 2;
             ball.y = canvas.height / 2;
             ball.speed = 5;
-            ball.dx = (Math.random() > 0.5 ? 1 : -1) * ball.speed;
-            ball.dy = (Math.random() * 2 - 1) * ball.speed;
+
+            if (isMobile) {
+                // Portrait mode: ball primarily moves up/down
+                ball.dy = (Math.random() > 0.5 ? 1 : -1) * ball.speed;
+                ball.dx = (Math.random() * 2 - 1) * ball.speed;
+            } else {
+                // Landscape mode: ball primarily moves left/right
+                ball.dx = (Math.random() > 0.5 ? 1 : -1) * ball.speed;
+                ball.dy = (Math.random() * 2 - 1) * ball.speed;
+            }
         }
 
         function updateScore() {
@@ -736,8 +1019,21 @@
         function resetGame() {
             player.score = 0;
             player2.score = 0;
-            player.y = canvas.height / 2 - paddleHeight / 2;
-            player2.y = canvas.height / 2 - paddleHeight / 2;
+
+            if (isMobile) {
+                // Portrait mode: reset paddles to center horizontally
+                player.x = canvas.width / 2 - paddleWidth / 2;
+                player.y = 20;
+                player2.x = canvas.width / 2 - paddleWidth / 2;
+                player2.y = canvas.height - 20 - paddleHeight;
+            } else {
+                // Landscape mode: reset paddles to center vertically
+                player.x = 20;
+                player.y = canvas.height / 2 - paddleHeight / 2;
+                player2.x = canvas.width - 20 - paddleWidth;
+                player2.y = canvas.height / 2 - paddleHeight / 2;
+            }
+
             resetBall();
             updateScore();
             gameRunning = false;
@@ -764,14 +1060,33 @@
             gameScreen.style.display = 'flex';
 
             // Update controls text and touch controls based on mode
-            if (mode === 'ai') {
-                controlsText.textContent = 'Player: W/S or Arrow Up/Down keys | Swipe to control or tap canvas to start';
-                scoreDisplay.textContent = 'Player: 0 | AI: 0';
-                rightTouchArea.style.display = 'none'; // Hide right controls in AI mode
+            if (isMobile) {
+                // Portrait mode text
+                if (mode === 'ai') {
+                    controlsText.textContent = 'Swipe left/right to control | Tap to start';
+                    scoreDisplay.textContent = 'Player: 0 | AI: 0';
+                    rightTouchArea.style.display = 'none'; // Hide right controls in AI mode
+                } else {
+                    controlsText.textContent = 'Top: Swipe left/right | Bottom: Swipe left/right | Tap to start';
+                    scoreDisplay.textContent = 'Player 1: 0 | Player 2: 0';
+                    rightTouchArea.style.display = 'flex'; // Show right controls in vs player mode
+                }
+
+                // Auto-enable fullscreen on mobile
+                if (!document.body.classList.contains('zoomed')) {
+                    toggleFullscreen();
+                }
             } else {
-                controlsText.textContent = 'Player 1 (Left): W/S keys | Player 2 (Right): Arrow Up/Down or I/K keys | Swipe to control or tap canvas to start';
-                scoreDisplay.textContent = 'Player 1: 0 | Player 2: 0';
-                rightTouchArea.style.display = 'flex'; // Show right controls in vs player mode
+                // Landscape mode text
+                if (mode === 'ai') {
+                    controlsText.textContent = 'Player: W/S or Arrow Up/Down keys | Swipe to control or tap canvas to start';
+                    scoreDisplay.textContent = 'Player: 0 | AI: 0';
+                    rightTouchArea.style.display = 'none'; // Hide right controls in AI mode
+                } else {
+                    controlsText.textContent = 'Player 1 (Left): W/S keys | Player 2 (Right): Arrow Up/Down or I/K keys | Swipe to control or tap canvas to start';
+                    scoreDisplay.textContent = 'Player 1: 0 | Player 2: 0';
+                    rightTouchArea.style.display = 'flex'; // Show right controls in vs player mode
+                }
             }
 
             resetGame();
@@ -783,6 +1098,12 @@
             gameMode = null;
             menuScreen.style.display = 'block';
             gameScreen.style.display = 'none';
+
+            // Exit fullscreen if in zoomed mode
+            if (document.body.classList.contains('zoomed')) {
+                toggleFullscreen();
+            }
+
             resetGame();
         }
 

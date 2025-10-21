@@ -806,12 +806,16 @@
                     ball.x < player2.x + player2.width &&
                     ball.dy < 0) {
 
+                    // Increase ball speed on hit
+                    ball.speed += 0.3;
+
                     // Calculate where ball hit the paddle (horizontally)
                     let hitPos = (ball.x - (player2.x + player2.width / 2)) / (player2.width / 2);
-                    ball.dx = hitPos * 5;
-                    ball.dy *= -1;
-                    ball.speed += 0.2; // Increase speed slightly
-                    ball.dy = ball.dy > 0 ? ball.speed : -ball.speed;
+
+                    // Set angle based on hit position, with increased speed
+                    let angle = hitPos * Math.PI / 4; // Max 45 degrees
+                    ball.dx = ball.speed * Math.sin(angle);
+                    ball.dy = ball.speed * Math.cos(angle);
                 }
 
                 // Player 1 paddle collision (bottom - human player)
@@ -820,11 +824,16 @@
                     ball.x < player.x + player.width &&
                     ball.dy > 0) {
 
+                    // Increase ball speed on hit
+                    ball.speed += 0.3;
+
+                    // Calculate where ball hit the paddle (horizontally)
                     let hitPos = (ball.x - (player.x + player.width / 2)) / (player.width / 2);
-                    ball.dx = hitPos * 5;
-                    ball.dy *= -1;
-                    ball.speed += 0.2;
-                    ball.dy = ball.dy > 0 ? ball.speed : -ball.speed;
+
+                    // Set angle based on hit position, with increased speed
+                    let angle = hitPos * Math.PI / 4; // Max 45 degrees
+                    ball.dx = ball.speed * Math.sin(angle);
+                    ball.dy = -ball.speed * Math.cos(angle);
                 }
 
                 // Score points (top/bottom)
@@ -853,12 +862,16 @@
                     ball.y < player.y + player.height &&
                     ball.dx < 0) {
 
-                    // Calculate where ball hit the paddle
+                    // Increase ball speed on hit
+                    ball.speed += 0.3;
+
+                    // Calculate where ball hit the paddle (vertically)
                     let hitPos = (ball.y - (player.y + player.height / 2)) / (player.height / 2);
-                    ball.dy = hitPos * 5;
-                    ball.dx *= -1;
-                    ball.speed += 0.2; // Increase speed slightly
-                    ball.dx = ball.dx > 0 ? ball.speed : -ball.speed;
+
+                    // Set angle based on hit position, with increased speed
+                    let angle = hitPos * Math.PI / 4; // Max 45 degrees
+                    ball.dy = ball.speed * Math.sin(angle);
+                    ball.dx = ball.speed * Math.cos(angle);
                 }
 
                 // Player 2 paddle collision (right)
@@ -867,11 +880,16 @@
                     ball.y < player2.y + player2.height &&
                     ball.dx > 0) {
 
+                    // Increase ball speed on hit
+                    ball.speed += 0.3;
+
+                    // Calculate where ball hit the paddle (vertically)
                     let hitPos = (ball.y - (player2.y + player2.height / 2)) / (player2.height / 2);
-                    ball.dy = hitPos * 5;
-                    ball.dx *= -1;
-                    ball.speed += 0.2;
-                    ball.dx = ball.dx > 0 ? ball.speed : -ball.speed;
+
+                    // Set angle based on hit position, with increased speed
+                    let angle = hitPos * Math.PI / 4; // Max 45 degrees
+                    ball.dy = ball.speed * Math.sin(angle);
+                    ball.dx = -ball.speed * Math.cos(angle);
                 }
 
                 // Score points (left/right)

@@ -20,6 +20,7 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             font-family: 'Arial', sans-serif;
             color: white;
+            padding: 10px;
         }
 
         h1 {
@@ -33,6 +34,8 @@
             border-radius: 8px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             background: #000;
+            max-width: 100%;
+            height: auto;
         }
 
         .controls {
@@ -123,6 +126,100 @@
         #backBtn:hover {
             background: rgba(255, 255, 255, 0.3);
         }
+
+        /* Touch controls */
+        #touchControls {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+            height: 120px;
+            margin-top: 15px;
+            gap: 10px;
+        }
+
+        .touch-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .touch-btn {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            border-radius: 5px;
+            color: white;
+            font-size: 1.2em;
+            font-weight: bold;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .touch-btn:active {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+                margin-bottom: 15px;
+            }
+
+            .menu-buttons {
+                flex-direction: column;
+                gap: 15px;
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .menu-btn {
+                padding: 15px 30px;
+                font-size: 1.1em;
+                width: 100%;
+            }
+
+            #score {
+                font-size: 1.2em;
+            }
+
+            .controls {
+                font-size: 0.9em;
+            }
+
+            button {
+                padding: 8px 16px;
+                font-size: 0.9em;
+            }
+
+            #touchControls {
+                display: flex;
+            }
+
+            #gameCanvas {
+                border: 2px solid white;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .menu-btn {
+                padding: 12px 24px;
+                font-size: 1em;
+            }
+
+            #score {
+                font-size: 1em;
+            }
+
+            .controls p {
+                font-size: 0.8em;
+            }
+        }
     </style>
 </head>
 <body>
@@ -145,6 +242,16 @@
             <p id="controlsText">Player 1 (Left): W/S keys | Player 2 (Right): Arrow Up/Down or I/K keys</p>
             <p>Press Space to start/pause</p>
         </div>
+        <div id="touchControls">
+            <div class="touch-area">
+                <button class="touch-btn" id="leftUp">▲</button>
+                <button class="touch-btn" id="leftDown">▼</button>
+            </div>
+            <div class="touch-area" id="player2TouchArea">
+                <button class="touch-btn" id="rightUp">▲</button>
+                <button class="touch-btn" id="rightDown">▼</button>
+            </div>
+        </div>
         <button id="resetBtn">Reset Game</button>
         <button id="backBtn">Back to Menu</button>
     </div>
@@ -160,6 +267,13 @@
         const vsAIBtn = document.getElementById('vsAIBtn');
         const backBtn = document.getElementById('backBtn');
         const controlsText = document.getElementById('controlsText');
+        const player2TouchArea = document.getElementById('player2TouchArea');
+
+        // Touch control buttons
+        const leftUp = document.getElementById('leftUp');
+        const leftDown = document.getElementById('leftDown');
+        const rightUp = document.getElementById('rightUp');
+        const rightDown = document.getElementById('rightDown');
 
         // Game variables
         let gameRunning = false;
@@ -252,6 +366,87 @@
         });
 
         resetBtn.addEventListener('click', resetGame);
+
+        // Touch event listeners
+        function addTouchListeners() {
+            // Left paddle controls
+            leftUp.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                keys.player1Up = true;
+            });
+            leftUp.addEventListener('touchend', () => {
+                keys.player1Up = false;
+            });
+
+            leftDown.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                keys.player1Down = true;
+            });
+            leftDown.addEventListener('touchend', () => {
+                keys.player1Down = false;
+            });
+
+            // Right paddle controls (for vs player mode)
+            rightUp.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                keys.player2Up = true;
+            });
+            rightUp.addEventListener('touchend', () => {
+                keys.player2Up = false;
+            });
+
+            rightDown.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                keys.player2Down = true;
+            });
+            rightDown.addEventListener('touchend', () => {
+                keys.player2Down = false;
+            });
+
+            // Also handle mouse events for desktop testing
+            leftUp.addEventListener('mousedown', () => keys.player1Up = true);
+            leftUp.addEventListener('mouseup', () => keys.player1Up = false);
+            leftDown.addEventListener('mousedown', () => keys.player1Down = true);
+            leftDown.addEventListener('mouseup', () => keys.player1Down = false);
+            rightUp.addEventListener('mousedown', () => keys.player2Up = true);
+            rightUp.addEventListener('mouseup', () => keys.player2Up = false);
+            rightDown.addEventListener('mousedown', () => keys.player2Down = true);
+            rightDown.addEventListener('mouseup', () => keys.player2Down = false);
+        }
+
+        // Initialize touch controls
+        addTouchListeners();
+
+        // Auto-start game on touch for mobile
+        canvas.addEventListener('touchstart', (e) => {
+            if (!gameRunning) {
+                e.preventDefault();
+                toggleGame();
+            }
+        }, { passive: false });
+
+        // Responsive canvas sizing
+        function resizeCanvas() {
+            const maxWidth = Math.min(800, window.innerWidth - 40);
+            const maxHeight = Math.min(600, window.innerHeight - 400);
+            const aspectRatio = 800 / 600;
+
+            let newWidth = maxWidth;
+            let newHeight = newWidth / aspectRatio;
+
+            if (newHeight > maxHeight) {
+                newHeight = maxHeight;
+                newWidth = newHeight * aspectRatio;
+            }
+
+            // Store scale for proper collision detection
+            canvas.style.width = newWidth + 'px';
+            canvas.style.height = newHeight + 'px';
+        }
+
+        // Initial resize and add listener
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
 
         // Menu button event listeners
         vsPlayerBtn.addEventListener('click', () => startGame('player'));
@@ -447,13 +642,15 @@
             menuScreen.style.display = 'none';
             gameScreen.style.display = 'flex';
 
-            // Update controls text based on mode
+            // Update controls text and touch controls based on mode
             if (mode === 'ai') {
-                controlsText.textContent = 'Player: W/S or Arrow Up/Down keys';
+                controlsText.textContent = 'Player: W/S or Arrow Up/Down keys | Touch controls or tap canvas to start';
                 scoreDisplay.textContent = 'Player: 0 | AI: 0';
+                player2TouchArea.style.display = 'none'; // Hide right controls in AI mode
             } else {
-                controlsText.textContent = 'Player 1 (Left): W/S keys | Player 2 (Right): Arrow Up/Down or I/K keys';
+                controlsText.textContent = 'Player 1 (Left): W/S keys | Player 2 (Right): Arrow Up/Down or I/K keys | Touch controls or tap canvas to start';
                 scoreDisplay.textContent = 'Player 1: 0 | Player 2: 0';
+                player2TouchArea.style.display = 'flex'; // Show right controls in vs player mode
             }
 
             resetGame();

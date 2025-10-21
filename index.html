@@ -29,6 +29,44 @@
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
+        #loginScreen {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        #loginScreen h2 {
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        #loginScreen p {
+            margin-bottom: 30px;
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        #gameContainer {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #gameContainer.active {
+            display: flex;
+        }
+
+        #userInfo {
+            margin-bottom: 15px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 1.1em;
+        }
+
         #gameCanvas {
             border: 4px solid #00ffff;
             border-radius: 8px;
@@ -80,7 +118,12 @@
         }
 
         #menuScreen {
+            display: none;
             text-align: center;
+        }
+
+        #menuScreen.active {
+            display: block;
         }
 
         #gameScreen {
@@ -129,6 +172,12 @@
 
         #backBtn:hover {
             background: rgba(255, 255, 255, 0.3);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
         }
 
         /* Touch controls - hidden as we now use canvas touch controls */
@@ -275,15 +324,24 @@
     </style>
 </head>
 <body>
-    <h1>Pong Game</h1>
+    <!-- Login Screen -->
+    <div id="loginScreen">
+        <h1>Pong Game</h1>
+        <h2>Welcome!</h2>
+        <p>Please log in with Wildcard to play</p>
+        <button id="loginBtn">Login with Wildcard</button>
+    </div>
 
     <!-- Menu Screen -->
     <div id="menuScreen">
+        <h1>Pong Game</h1>
+        <div id="userInfo"></div>
         <h2>Choose Game Mode</h2>
         <div class="menu-buttons">
             <button class="menu-btn" id="vsPlayerBtn">Play vs Player</button>
             <button class="menu-btn" id="vsAIBtn">Play vs AI</button>
         </div>
+        <button id="logoutBtn">Logout</button>
     </div>
 
     <!-- Game Screen -->
@@ -309,6 +367,20 @@
     </div>
 
     <script>
+        // OAuth/OIDC Configuration
+        const AUTH_CONFIG = {
+            clientId: '9154dac6-2212-4609-8650-fbeac2e70877',
+            authorizationEndpoint: 'https://wildcard.id/oauth/authorize',
+            tokenEndpoint: 'https://wildcard.id/oauth/token',
+            redirectUri: window.location.origin + window.location.pathname,
+            scope: 'openid profile'
+        };
+
+        // DOM Elements
+        const loginScreen = document.getElementById('loginScreen');
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userInfo = document.getElementById('userInfo');
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreDisplay = document.getElementById('score');
@@ -341,6 +413,198 @@
             left: { active: false, startY: 0, currentY: 0, startX: 0, currentX: 0 },
             right: { active: false, startY: 0, currentY: 0, startX: 0, currentX: 0 }
         };
+
+        // Authentication Helper Functions
+        function generateRandomString(length) {
+            const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+            let result = '';
+            const randomValues = new Uint8Array(length);
+            crypto.getRandomValues(randomValues);
+            for (let i = 0; i < length; i++) {
+                result += charset[randomValues[i] % charset.length];
+            }
+            return result;
+        }
+
+        async function sha256(plain) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(plain);
+            return crypto.subtle.digest('SHA-256', data);
+        }
+
+        function base64UrlEncode(arrayBuffer) {
+            const bytes = new Uint8Array(arrayBuffer);
+            let binary = '';
+            for (let i = 0; i < bytes.length; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary)
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=/g, '');
+        }
+
+        async function generatePKCE() {
+            const codeVerifier = generateRandomString(128);
+            const hashed = await sha256(codeVerifier);
+            const codeChallenge = base64UrlEncode(hashed);
+            return { codeVerifier, codeChallenge };
+        }
+
+        // Authentication Functions
+        async function login() {
+            const { codeVerifier, codeChallenge } = await generatePKCE();
+            const state = generateRandomString(32);
+
+            // Store PKCE verifier and state
+            sessionStorage.setItem('pkce_code_verifier', codeVerifier);
+            sessionStorage.setItem('oauth_state', state);
+
+            // Build authorization URL
+            const params = new URLSearchParams({
+                client_id: AUTH_CONFIG.clientId,
+                redirect_uri: AUTH_CONFIG.redirectUri,
+                response_type: 'code',
+                scope: AUTH_CONFIG.scope,
+                state: state,
+                code_challenge: codeChallenge,
+                code_challenge_method: 'S256'
+            });
+
+            window.location.href = `${AUTH_CONFIG.authorizationEndpoint}?${params.toString()}`;
+        }
+
+        async function handleCallback() {
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            const state = params.get('state');
+            const error = params.get('error');
+
+            if (error) {
+                console.error('OAuth error:', error);
+                alert('Authentication failed: ' + error);
+                return;
+            }
+
+            if (!code || !state) {
+                return; // Not a callback
+            }
+
+            // Verify state
+            const savedState = sessionStorage.getItem('oauth_state');
+            if (state !== savedState) {
+                console.error('State mismatch');
+                alert('Authentication failed: Invalid state');
+                return;
+            }
+
+            // Exchange code for token
+            const codeVerifier = sessionStorage.getItem('pkce_code_verifier');
+
+            try {
+                const response = await fetch(AUTH_CONFIG.tokenEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        grant_type: 'authorization_code',
+                        code: code,
+                        redirect_uri: AUTH_CONFIG.redirectUri,
+                        client_id: AUTH_CONFIG.clientId,
+                        code_verifier: codeVerifier
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Token exchange failed');
+                }
+
+                const data = await response.json();
+
+                // Store tokens
+                localStorage.setItem('access_token', data.access_token);
+                if (data.id_token) {
+                    localStorage.setItem('id_token', data.id_token);
+                    // Parse ID token to get user info
+                    const userInfoFromToken = parseJWT(data.id_token);
+                    localStorage.setItem('user_info', JSON.stringify(userInfoFromToken));
+                }
+
+                // Clean up
+                sessionStorage.removeItem('pkce_code_verifier');
+                sessionStorage.removeItem('oauth_state');
+
+                // Remove query parameters from URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+
+                // Show menu
+                showMenu();
+            } catch (error) {
+                console.error('Token exchange error:', error);
+                alert('Authentication failed. Please try again.');
+            }
+        }
+
+        function parseJWT(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (error) {
+                console.error('Error parsing JWT:', error);
+                return null;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('id_token');
+            localStorage.removeItem('user_info');
+
+            loginScreen.style.display = 'block';
+            menuScreen.classList.remove('active');
+            gameScreen.style.display = 'none';
+        }
+
+        function isAuthenticated() {
+            return !!localStorage.getItem('access_token');
+        }
+
+        function showMenu() {
+            if (!isAuthenticated()) {
+                loginScreen.style.display = 'block';
+                menuScreen.classList.remove('active');
+                return;
+            }
+
+            const userInfoData = localStorage.getItem('user_info');
+            if (userInfoData) {
+                const user = JSON.parse(userInfoData);
+                userInfo.textContent = `Logged in as: ${user.name || user.sub || 'User'}`;
+            }
+
+            loginScreen.style.display = 'none';
+            menuScreen.classList.add('active');
+        }
+
+        // Event Listeners
+        loginBtn.addEventListener('click', login);
+        logoutBtn.addEventListener('click', logout);
+
+        // Check authentication on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            await handleCallback();
+
+            if (isAuthenticated()) {
+                showMenu();
+            } else {
+                loginScreen.style.display = 'block';
+            }
+        });
 
         // Game variables
         let gameRunning = false;
@@ -997,7 +1261,7 @@
         // Start game with selected mode
         function startGame(mode) {
             gameMode = mode;
-            menuScreen.style.display = 'none';
+            menuScreen.classList.remove('active');
             gameScreen.style.display = 'flex';
 
             // Update controls text based on mode
@@ -1033,7 +1297,7 @@
         function backToMenu() {
             gameRunning = false;
             gameMode = null;
-            menuScreen.style.display = 'block';
+            menuScreen.classList.add('active');
             gameScreen.style.display = 'none';
 
             // Exit fullscreen when returning to menu

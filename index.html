@@ -71,27 +71,100 @@
         button:active {
             transform: scale(0.95);
         }
+
+        #menuScreen {
+            text-align: center;
+        }
+
+        #gameScreen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .menu-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .menu-btn {
+            padding: 20px 40px;
+            font-size: 1.3em;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .menu-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .menu-btn:active {
+            transform: translateY(-2px);
+        }
+
+        #backBtn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 1em;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+        }
+
+        #backBtn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
     </style>
 </head>
 <body>
     <h1>Pong Game</h1>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <div id="score">Player 1: 0 | Player 2: 0</div>
-    <div class="controls">
-        <p>Player 1 (Left): W/S keys | Player 2 (Right): Arrow Up/Down or I/K keys</p>
-        <p>Press Space to start/pause</p>
+
+    <!-- Menu Screen -->
+    <div id="menuScreen">
+        <h2>Choose Game Mode</h2>
+        <div class="menu-buttons">
+            <button class="menu-btn" id="vsPlayerBtn">Play vs Player</button>
+            <button class="menu-btn" id="vsAIBtn">Play vs AI</button>
+        </div>
     </div>
-    <button id="resetBtn">Reset Game</button>
+
+    <!-- Game Screen -->
+    <div id="gameScreen">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="score">Player 1: 0 | Player 2: 0</div>
+        <div class="controls">
+            <p id="controlsText">Player 1 (Left): W/S keys | Player 2 (Right): Arrow Up/Down or I/K keys</p>
+            <p>Press Space to start/pause</p>
+        </div>
+        <button id="resetBtn">Reset Game</button>
+        <button id="backBtn">Back to Menu</button>
+    </div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreDisplay = document.getElementById('score');
         const resetBtn = document.getElementById('resetBtn');
+        const menuScreen = document.getElementById('menuScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const vsPlayerBtn = document.getElementById('vsPlayerBtn');
+        const vsAIBtn = document.getElementById('vsAIBtn');
+        const backBtn = document.getElementById('backBtn');
+        const controlsText = document.getElementById('controlsText');
 
         // Game variables
         let gameRunning = false;
         let animationId;
+        let gameMode = null; // 'player' or 'ai'
 
         // Paddle properties
         const paddleWidth = 10;
@@ -180,6 +253,11 @@
 
         resetBtn.addEventListener('click', resetGame);
 
+        // Menu button event listeners
+        vsPlayerBtn.addEventListener('click', () => startGame('player'));
+        vsAIBtn.addEventListener('click', () => startGame('ai'));
+        backBtn.addEventListener('click', backToMenu);
+
         // Draw functions
         function drawRect(x, y, width, height, color) {
             ctx.fillStyle = color;
@@ -230,11 +308,40 @@
 
         // Update player 2 paddle
         function updatePlayer2() {
-            if (keys.player2Up && player2.y > 0) {
-                player2.y -= paddleSpeed;
+            if (gameMode === 'ai') {
+                updateAI();
+            } else {
+                if (keys.player2Up && player2.y > 0) {
+                    player2.y -= paddleSpeed;
+                }
+                if (keys.player2Down && player2.y + player2.height < canvas.height) {
+                    player2.y += paddleSpeed;
+                }
             }
-            if (keys.player2Down && player2.y + player2.height < canvas.height) {
-                player2.y += paddleSpeed;
+        }
+
+        // AI controller for player 2 paddle
+        function updateAI() {
+            const paddleCenter = player2.y + player2.height / 2;
+            const ballCenter = ball.y;
+            const aiSpeed = paddleSpeed * 0.7; // Make AI slightly slower for fair gameplay
+            const tolerance = 10; // Dead zone to prevent jittering
+
+            // Only move if ball is moving towards AI
+            if (ball.dx > 0) {
+                if (ballCenter < paddleCenter - tolerance && player2.y > 0) {
+                    player2.y -= aiSpeed;
+                } else if (ballCenter > paddleCenter + tolerance && player2.y + player2.height < canvas.height) {
+                    player2.y += aiSpeed;
+                }
+            } else {
+                // Return to center when ball is moving away
+                const targetY = canvas.height / 2 - player2.height / 2;
+                if (player2.y < targetY - tolerance) {
+                    player2.y += aiSpeed * 0.5;
+                } else if (player2.y > targetY + tolerance) {
+                    player2.y -= aiSpeed * 0.5;
+                }
             }
         }
 
@@ -296,7 +403,11 @@
         }
 
         function updateScore() {
-            scoreDisplay.textContent = `Player 1: ${player.score} | Player 2: ${player2.score}`;
+            if (gameMode === 'ai') {
+                scoreDisplay.textContent = `Player: ${player.score} | AI: ${player2.score}`;
+            } else {
+                scoreDisplay.textContent = `Player 1: ${player.score} | Player 2: ${player2.score}`;
+            }
         }
 
         function toggleGame() {
@@ -330,8 +441,35 @@
             }
         }
 
+        // Start game with selected mode
+        function startGame(mode) {
+            gameMode = mode;
+            menuScreen.style.display = 'none';
+            gameScreen.style.display = 'flex';
+
+            // Update controls text based on mode
+            if (mode === 'ai') {
+                controlsText.textContent = 'Player: W/S or Arrow Up/Down keys';
+                scoreDisplay.textContent = 'Player: 0 | AI: 0';
+            } else {
+                controlsText.textContent = 'Player 1 (Left): W/S keys | Player 2 (Right): Arrow Up/Down or I/K keys';
+                scoreDisplay.textContent = 'Player 1: 0 | Player 2: 0';
+            }
+
+            resetGame();
+        }
+
+        // Return to menu
+        function backToMenu() {
+            gameRunning = false;
+            gameMode = null;
+            menuScreen.style.display = 'block';
+            gameScreen.style.display = 'none';
+            resetGame();
+        }
+
         // Initialize game
-        resetGame();
+        drawGame();
     </script>
 </body>
 </html>

@@ -224,15 +224,20 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: rgba(102, 126, 234, 0.9);
+            background: rgba(0, 0, 0, 0.8);
             padding: 20px 10px;
             font-size: 1.2em;
             font-weight: bold;
-            color: white;
+            color: #00ffff;
             writing-mode: vertical-rl;
             text-orientation: mixed;
             min-width: 60px;
             order: -1;
+            border: 3px solid #00ffff;
+            box-shadow: 0 0 10px #00ffff,
+                        0 0 20px #00ffff,
+                        0 0 30px #00ffff,
+                        inset 0 0 10px rgba(0, 255, 255, 0.3);
         }
 
         body.zoomed #gameCanvas {

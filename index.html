@@ -668,6 +668,11 @@
         }
 
         function drawNet() {
+            // Save context for glow effect
+            ctx.save();
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#00ffff';
+
             if (isMobile) {
                 // Portrait mode: horizontal net
                 const netWidth = 10;
@@ -675,7 +680,7 @@
                 const gap = 15;
 
                 for (let i = 0; i < canvas.width; i += netWidth + gap) {
-                    drawRect(i, canvas.height / 2 - netHeight / 2, netWidth, netHeight, '#444');
+                    drawRect(i, canvas.height / 2 - netHeight / 2, netWidth, netHeight, '#00ffff');
                 }
             } else {
                 // Landscape mode: vertical net
@@ -684,9 +689,12 @@
                 const gap = 15;
 
                 for (let i = 0; i < canvas.height; i += netHeight + gap) {
-                    drawRect(canvas.width / 2 - netWidth / 2, i, netWidth, netHeight, '#444');
+                    drawRect(canvas.width / 2 - netWidth / 2, i, netWidth, netHeight, '#00ffff');
                 }
             }
+
+            // Restore context
+            ctx.restore();
         }
 
         function drawGame() {

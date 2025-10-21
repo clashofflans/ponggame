@@ -127,69 +127,9 @@
             background: rgba(255, 255, 255, 0.3);
         }
 
-        #fullscreenBtn {
-            background: #4CAF50;
-            color: white;
-            position: relative;
-        }
-
-        #fullscreenBtn:hover {
-            background: #45a049;
-        }
-
-        /* Touch controls */
+        /* Touch controls - hidden as we now use canvas touch controls */
         #touchControls {
-            display: none;
-            width: 100%;
-            max-width: 800px;
-            height: 150px;
-            margin-top: 15px;
-            gap: 10px;
-            flex-direction: row;
-        }
-
-        @media (max-width: 768px) {
-            #touchControls {
-                flex-direction: column;
-                height: auto;
-                max-width: 400px;
-            }
-
-            .touch-area {
-                height: 80px;
-                width: 100%;
-            }
-        }
-
-        .touch-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid white;
-            border-radius: 10px;
-            color: white;
-            font-size: 1em;
-            font-weight: bold;
-            touch-action: none;
-            user-select: none;
-            position: relative;
-        }
-
-        .touch-area:active {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .touch-label {
-            font-size: 0.9em;
-            margin-bottom: 5px;
-        }
-
-        .touch-instruction {
-            font-size: 0.8em;
-            opacity: 0.8;
+            display: none !important;
         }
 
         /* Mobile responsive styles */
@@ -223,10 +163,6 @@
             button {
                 padding: 8px 16px;
                 font-size: 0.9em;
-            }
-
-            #touchControls {
-                display: flex;
             }
 
             #gameCanvas {
@@ -310,16 +246,6 @@
                 max-height: none;
             }
         }
-
-        body.zoomed #fullscreenBtn {
-            display: block;
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 10000;
-            background: rgba(76, 175, 80, 0.9);
-            padding: 12px 24px;
-        }
     </style>
 </head>
 <body>
@@ -353,7 +279,6 @@
             </div>
         </div>
         <button id="resetBtn">Reset Game</button>
-        <button id="fullscreenBtn">Fullscreen</button>
         <button id="backBtn">Back to Menu</button>
     </div>
 
@@ -367,7 +292,6 @@
         const vsPlayerBtn = document.getElementById('vsPlayerBtn');
         const vsAIBtn = document.getElementById('vsAIBtn');
         const backBtn = document.getElementById('backBtn');
-        const fullscreenBtn = document.getElementById('fullscreenBtn');
         const controlsText = document.getElementById('controlsText');
         const leftTouchArea = document.getElementById('leftTouchArea');
         const rightTouchArea = document.getElementById('rightTouchArea');
@@ -494,206 +418,168 @@
 
         resetBtn.addEventListener('click', resetGame);
 
-        // Touch event listeners with swipe gesture support
-        function addTouchListeners() {
-            if (isMobile) {
-                // Portrait mode: horizontal touch controls
-                // Helper function to get touch X position relative to element
-                function getTouchX(e, element) {
-                    const rect = element.getBoundingClientRect();
-                    const touch = e.touches[0];
-                    return touch.clientX - rect.left;
-                }
+        // Touch event listeners - now work anywhere on the canvas
+        const activeTouches = new Map(); // Track multiple simultaneous touches
 
-                // Top paddle (player 1) swipe controls
-                leftTouchArea.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    touchState.left.active = true;
-                    touchState.left.startX = getTouchX(e, leftTouchArea);
-                    touchState.left.currentX = touchState.left.startX;
-                });
-
-                leftTouchArea.addEventListener('touchmove', (e) => {
-                    e.preventDefault();
-                    if (touchState.left.active) {
-                        const rect = leftTouchArea.getBoundingClientRect();
-                        const touch = e.touches[0];
-                        const relativeX = touch.clientX - rect.left;
-                        const centerX = rect.width / 2;
-
-                        // Determine direction based on touch position relative to center
-                        // Up = left, Down = right
-                        if (relativeX < centerX - 20) {
-                            keys.player1Up = true;
-                            keys.player1Down = false;
-                        } else if (relativeX > centerX + 20) {
-                            keys.player1Down = true;
-                            keys.player1Up = false;
-                        } else {
-                            keys.player1Up = false;
-                            keys.player1Down = false;
-                        }
-                    }
-                });
-
-                leftTouchArea.addEventListener('touchend', () => {
-                    touchState.left.active = false;
-                    keys.player1Up = false;
-                    keys.player1Down = false;
-                });
-
-                leftTouchArea.addEventListener('touchcancel', () => {
-                    touchState.left.active = false;
-                    keys.player1Up = false;
-                    keys.player1Down = false;
-                });
-
-                // Bottom paddle (player 2) swipe controls
-                rightTouchArea.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    touchState.right.active = true;
-                    touchState.right.startX = getTouchX(e, rightTouchArea);
-                    touchState.right.currentX = touchState.right.startX;
-                });
-
-                rightTouchArea.addEventListener('touchmove', (e) => {
-                    e.preventDefault();
-                    if (touchState.right.active) {
-                        const rect = rightTouchArea.getBoundingClientRect();
-                        const touch = e.touches[0];
-                        const relativeX = touch.clientX - rect.left;
-                        const centerX = rect.width / 2;
-
-                        // Determine direction based on touch position relative to center
-                        // Up = left, Down = right
-                        if (relativeX < centerX - 20) {
-                            keys.player2Up = true;
-                            keys.player2Down = false;
-                        } else if (relativeX > centerX + 20) {
-                            keys.player2Down = true;
-                            keys.player2Up = false;
-                        } else {
-                            keys.player2Up = false;
-                            keys.player2Down = false;
-                        }
-                    }
-                });
-
-                rightTouchArea.addEventListener('touchend', () => {
-                    touchState.right.active = false;
-                    keys.player2Up = false;
-                    keys.player2Down = false;
-                });
-
-                rightTouchArea.addEventListener('touchcancel', () => {
-                    touchState.right.active = false;
-                    keys.player2Up = false;
-                    keys.player2Down = false;
-                });
-            } else {
-                // Landscape mode: vertical touch controls
-                // Helper function to get touch Y position relative to element
-                function getTouchY(e, element) {
-                    const rect = element.getBoundingClientRect();
-                    const touch = e.touches[0];
-                    return touch.clientY - rect.top;
-                }
-
-                // Left paddle swipe controls
-                leftTouchArea.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    touchState.left.active = true;
-                    touchState.left.startY = getTouchY(e, leftTouchArea);
-                    touchState.left.currentY = touchState.left.startY;
-                });
-
-                leftTouchArea.addEventListener('touchmove', (e) => {
-                    e.preventDefault();
-                    if (touchState.left.active) {
-                        const rect = leftTouchArea.getBoundingClientRect();
-                        const touch = e.touches[0];
-                        const relativeY = touch.clientY - rect.top;
-                        const centerY = rect.height / 2;
-
-                        // Determine direction based on touch position relative to center
-                        if (relativeY < centerY - 20) {
-                            keys.player1Up = true;
-                            keys.player1Down = false;
-                        } else if (relativeY > centerY + 20) {
-                            keys.player1Down = true;
-                            keys.player1Up = false;
-                        } else {
-                            keys.player1Up = false;
-                            keys.player1Down = false;
-                        }
-                    }
-                });
-
-                leftTouchArea.addEventListener('touchend', () => {
-                    touchState.left.active = false;
-                    keys.player1Up = false;
-                    keys.player1Down = false;
-                });
-
-                leftTouchArea.addEventListener('touchcancel', () => {
-                    touchState.left.active = false;
-                    keys.player1Up = false;
-                    keys.player1Down = false;
-                });
-
-                // Right paddle swipe controls
-                rightTouchArea.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    touchState.right.active = true;
-                    touchState.right.startY = getTouchY(e, rightTouchArea);
-                    touchState.right.currentY = touchState.right.startY;
-                });
-
-                rightTouchArea.addEventListener('touchmove', (e) => {
-                    e.preventDefault();
-                    if (touchState.right.active) {
-                        const rect = rightTouchArea.getBoundingClientRect();
-                        const touch = e.touches[0];
-                        const relativeY = touch.clientY - rect.top;
-                        const centerY = rect.height / 2;
-
-                        // Determine direction based on touch position relative to center
-                        if (relativeY < centerY - 20) {
-                            keys.player2Up = true;
-                            keys.player2Down = false;
-                        } else if (relativeY > centerY + 20) {
-                            keys.player2Down = true;
-                            keys.player2Up = false;
-                        } else {
-                            keys.player2Up = false;
-                            keys.player2Down = false;
-                        }
-                    }
-                });
-
-                rightTouchArea.addEventListener('touchend', () => {
-                    touchState.right.active = false;
-                    keys.player2Up = false;
-                    keys.player2Down = false;
-                });
-
-                rightTouchArea.addEventListener('touchcancel', () => {
-                    touchState.right.active = false;
-                    keys.player2Up = false;
-                    keys.player2Down = false;
-                });
-            }
-        }
-
-        // Initialize touch controls
-        addTouchListeners();
-
-        // Auto-start game on touch for mobile
         canvas.addEventListener('touchstart', (e) => {
             if (!gameRunning) {
-                e.preventDefault();
+                // Start game if not running
                 toggleGame();
+                return;
             }
+
+            e.preventDefault();
+
+            // Handle each touch
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                const rect = canvas.getBoundingClientRect();
+                const touchX = touch.clientX - rect.left;
+                const touchY = touch.clientY - rect.top;
+
+                // Store initial touch position
+                activeTouches.set(touch.identifier, {
+                    startX: touchX,
+                    startY: touchY,
+                    currentX: touchX,
+                    currentY: touchY,
+                    isTopHalf: touchY < rect.height / 2,
+                    isLeftHalf: touchX < rect.width / 2
+                });
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+
+            // Update all active touches
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                const touchData = activeTouches.get(touch.identifier);
+
+                if (!touchData) continue;
+
+                const rect = canvas.getBoundingClientRect();
+                const touchX = touch.clientX - rect.left;
+                const touchY = touch.clientY - rect.top;
+
+                touchData.currentX = touchX;
+                touchData.currentY = touchY;
+
+                if (isMobile) {
+                    // Portrait mode: swipe left/right
+                    const deltaX = touchData.currentX - touchData.startX;
+                    const threshold = 10;
+
+                    if (touchData.isTopHalf) {
+                        // Top half controls player 1
+                        if (deltaX < -threshold) {
+                            keys.player1Up = true;
+                            keys.player1Down = false;
+                        } else if (deltaX > threshold) {
+                            keys.player1Down = true;
+                            keys.player1Up = false;
+                        } else {
+                            keys.player1Up = false;
+                            keys.player1Down = false;
+                        }
+                    } else {
+                        // Bottom half controls player 2
+                        if (gameMode === 'player') {
+                            if (deltaX < -threshold) {
+                                keys.player2Up = true;
+                                keys.player2Down = false;
+                            } else if (deltaX > threshold) {
+                                keys.player2Down = true;
+                                keys.player2Up = false;
+                            } else {
+                                keys.player2Up = false;
+                                keys.player2Down = false;
+                            }
+                        }
+                    }
+                } else {
+                    // Landscape mode: swipe up/down
+                    const deltaY = touchData.currentY - touchData.startY;
+                    const threshold = 10;
+
+                    if (touchData.isLeftHalf) {
+                        // Left half controls player 1
+                        if (deltaY < -threshold) {
+                            keys.player1Up = true;
+                            keys.player1Down = false;
+                        } else if (deltaY > threshold) {
+                            keys.player1Down = true;
+                            keys.player1Up = false;
+                        } else {
+                            keys.player1Up = false;
+                            keys.player1Down = false;
+                        }
+                    } else {
+                        // Right half controls player 2
+                        if (gameMode === 'player') {
+                            if (deltaY < -threshold) {
+                                keys.player2Up = true;
+                                keys.player2Down = false;
+                            } else if (deltaY > threshold) {
+                                keys.player2Down = true;
+                                keys.player2Up = false;
+                            } else {
+                                keys.player2Up = false;
+                                keys.player2Down = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+
+            // Remove ended touches and reset keys
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                const touchData = activeTouches.get(touch.identifier);
+
+                if (touchData) {
+                    if (isMobile) {
+                        if (touchData.isTopHalf) {
+                            keys.player1Up = false;
+                            keys.player1Down = false;
+                        } else {
+                            keys.player2Up = false;
+                            keys.player2Down = false;
+                        }
+                    } else {
+                        if (touchData.isLeftHalf) {
+                            keys.player1Up = false;
+                            keys.player1Down = false;
+                        } else {
+                            keys.player2Up = false;
+                            keys.player2Down = false;
+                        }
+                    }
+
+                    activeTouches.delete(touch.identifier);
+                }
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+
+            // Clear all touches on cancel
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                activeTouches.delete(touch.identifier);
+            }
+
+            // Reset all keys
+            keys.player1Up = false;
+            keys.player1Down = false;
+            keys.player2Up = false;
+            keys.player2Down = false;
         }, { passive: false });
 
         // Responsive canvas sizing
@@ -1059,33 +945,24 @@
             menuScreen.style.display = 'none';
             gameScreen.style.display = 'flex';
 
-            // Update controls text and touch controls based on mode
+            // Update controls text based on mode
             if (isMobile) {
                 // Portrait mode text
                 if (mode === 'ai') {
-                    controlsText.textContent = 'Swipe left/right to control | Tap to start';
+                    controlsText.textContent = 'Touch top half and swipe left/right to control | Tap to start';
                     scoreDisplay.textContent = 'Player: 0 | AI: 0';
-                    rightTouchArea.style.display = 'none'; // Hide right controls in AI mode
                 } else {
-                    controlsText.textContent = 'Top: Swipe left/right | Bottom: Swipe left/right | Tap to start';
+                    controlsText.textContent = 'Touch top/bottom half and swipe left/right | Tap to start';
                     scoreDisplay.textContent = 'Player 1: 0 | Player 2: 0';
-                    rightTouchArea.style.display = 'flex'; // Show right controls in vs player mode
-                }
-
-                // Auto-enable fullscreen on mobile
-                if (!document.body.classList.contains('zoomed')) {
-                    toggleFullscreen();
                 }
             } else {
                 // Landscape mode text
                 if (mode === 'ai') {
-                    controlsText.textContent = 'Player: W/S or Arrow Up/Down keys | Swipe to control or tap canvas to start';
+                    controlsText.textContent = 'W/S or Arrow keys | Touch left half and swipe up/down | Tap to start';
                     scoreDisplay.textContent = 'Player: 0 | AI: 0';
-                    rightTouchArea.style.display = 'none'; // Hide right controls in AI mode
                 } else {
-                    controlsText.textContent = 'Player 1 (Left): W/S keys | Player 2 (Right): Arrow Up/Down or I/K keys | Swipe to control or tap canvas to start';
+                    controlsText.textContent = 'W/S, Arrow Up/Down or I/K keys | Touch left/right half and swipe up/down | Tap to start';
                     scoreDisplay.textContent = 'Player 1: 0 | Player 2: 0';
-                    rightTouchArea.style.display = 'flex'; // Show right controls in vs player mode
                 }
             }
 
@@ -1099,32 +976,9 @@
             menuScreen.style.display = 'block';
             gameScreen.style.display = 'none';
 
-            // Exit fullscreen if in zoomed mode
-            if (document.body.classList.contains('zoomed')) {
-                toggleFullscreen();
-            }
-
             resetGame();
         }
 
-        // Fullscreen zoom toggle functionality
-        function toggleFullscreen() {
-            const body = document.body;
-
-            if (body.classList.contains('zoomed')) {
-                // Exit zoom mode
-                body.classList.remove('zoomed');
-                fullscreenBtn.textContent = 'Fullscreen';
-                resizeCanvas(); // Restore normal canvas size
-            } else {
-                // Enter zoom mode
-                body.classList.add('zoomed');
-                fullscreenBtn.textContent = 'Exit Fullscreen';
-            }
-        }
-
-        // Add fullscreen button event listener
-        fullscreenBtn.addEventListener('click', toggleFullscreen);
 
         // Initialize game
         drawGame();

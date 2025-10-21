@@ -127,6 +127,16 @@
             background: rgba(255, 255, 255, 0.3);
         }
 
+        #fullscreenBtn {
+            background: #4CAF50;
+            color: white;
+            position: relative;
+        }
+
+        #fullscreenBtn:hover {
+            background: #45a049;
+        }
+
         /* Touch controls */
         #touchControls {
             display: none;
@@ -261,6 +271,7 @@
             </div>
         </div>
         <button id="resetBtn">Reset Game</button>
+        <button id="fullscreenBtn">Fullscreen</button>
         <button id="backBtn">Back to Menu</button>
     </div>
 
@@ -274,6 +285,7 @@
         const vsPlayerBtn = document.getElementById('vsPlayerBtn');
         const vsAIBtn = document.getElementById('vsAIBtn');
         const backBtn = document.getElementById('backBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
         const controlsText = document.getElementById('controlsText');
         const leftTouchArea = document.getElementById('leftTouchArea');
         const rightTouchArea = document.getElementById('rightTouchArea');
@@ -720,6 +732,59 @@
             gameScreen.style.display = 'none';
             resetGame();
         }
+
+        // Fullscreen toggle functionality
+        function toggleFullscreen() {
+            if (!document.fullscreenElement &&
+                !document.webkitFullscreenElement &&
+                !document.mozFullScreenElement &&
+                !document.msFullscreenElement) {
+                // Enter fullscreen
+                const elem = document.documentElement;
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) { // Safari
+                    elem.webkitRequestFullscreen();
+                } else if (elem.mozRequestFullScreen) { // Firefox
+                    elem.mozRequestFullScreen();
+                } else if (elem.msRequestFullscreen) { // IE/Edge
+                    elem.msRequestFullscreen();
+                }
+                fullscreenBtn.textContent = 'Exit Fullscreen';
+            } else {
+                // Exit fullscreen
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) { // Safari
+                    document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) { // Firefox
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) { // IE/Edge
+                    document.msExitFullscreen();
+                }
+                fullscreenBtn.textContent = 'Fullscreen';
+            }
+        }
+
+        // Update button text when fullscreen changes
+        document.addEventListener('fullscreenchange', updateFullscreenButton);
+        document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+        document.addEventListener('mozfullscreenchange', updateFullscreenButton);
+        document.addEventListener('msfullscreenchange', updateFullscreenButton);
+
+        function updateFullscreenButton() {
+            if (document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.mozFullScreenElement ||
+                document.msFullscreenElement) {
+                fullscreenBtn.textContent = 'Exit Fullscreen';
+            } else {
+                fullscreenBtn.textContent = 'Fullscreen';
+            }
+        }
+
+        // Add fullscreen button event listener
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
 
         // Initialize game
         drawGame();

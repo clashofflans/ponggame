@@ -238,6 +238,59 @@
                 font-size: 0.8em;
             }
         }
+
+        /* Fullscreen zoom styles */
+        body.zoomed {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body.zoomed #gameScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            z-index: 9999;
+            justify-content: center;
+            padding: 0;
+            margin: 0;
+        }
+
+        body.zoomed h1,
+        body.zoomed #score,
+        body.zoomed .controls,
+        body.zoomed #resetBtn,
+        body.zoomed #backBtn,
+        body.zoomed #touchControls {
+            display: none;
+        }
+
+        body.zoomed #gameCanvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: none;
+            max-height: 100vh;
+            width: auto;
+            height: 100vh;
+            border: none;
+            border-radius: 0;
+        }
+
+        body.zoomed #fullscreenBtn {
+            display: block;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10000;
+            background: rgba(76, 175, 80, 0.9);
+            padding: 12px 24px;
+        }
     </style>
 </head>
 <body>
@@ -733,53 +786,19 @@
             resetGame();
         }
 
-        // Fullscreen toggle functionality
+        // Fullscreen zoom toggle functionality
         function toggleFullscreen() {
-            if (!document.fullscreenElement &&
-                !document.webkitFullscreenElement &&
-                !document.mozFullScreenElement &&
-                !document.msFullscreenElement) {
-                // Enter fullscreen
-                const elem = document.documentElement;
-                if (elem.requestFullscreen) {
-                    elem.requestFullscreen();
-                } else if (elem.webkitRequestFullscreen) { // Safari
-                    elem.webkitRequestFullscreen();
-                } else if (elem.mozRequestFullScreen) { // Firefox
-                    elem.mozRequestFullScreen();
-                } else if (elem.msRequestFullscreen) { // IE/Edge
-                    elem.msRequestFullscreen();
-                }
-                fullscreenBtn.textContent = 'Exit Fullscreen';
-            } else {
-                // Exit fullscreen
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) { // Safari
-                    document.webkitExitFullscreen();
-                } else if (document.mozCancelFullScreen) { // Firefox
-                    document.mozCancelFullScreen();
-                } else if (document.msExitFullscreen) { // IE/Edge
-                    document.msExitFullscreen();
-                }
-                fullscreenBtn.textContent = 'Fullscreen';
-            }
-        }
+            const body = document.body;
 
-        // Update button text when fullscreen changes
-        document.addEventListener('fullscreenchange', updateFullscreenButton);
-        document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
-        document.addEventListener('mozfullscreenchange', updateFullscreenButton);
-        document.addEventListener('msfullscreenchange', updateFullscreenButton);
-
-        function updateFullscreenButton() {
-            if (document.fullscreenElement ||
-                document.webkitFullscreenElement ||
-                document.mozFullScreenElement ||
-                document.msFullscreenElement) {
-                fullscreenBtn.textContent = 'Exit Fullscreen';
-            } else {
+            if (body.classList.contains('zoomed')) {
+                // Exit zoom mode
+                body.classList.remove('zoomed');
                 fullscreenBtn.textContent = 'Fullscreen';
+                resizeCanvas(); // Restore normal canvas size
+            } else {
+                // Enter zoom mode
+                body.classList.add('zoomed');
+                fullscreenBtn.textContent = 'Exit Fullscreen';
             }
         }
 

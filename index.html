@@ -2,398 +2,1918 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>Mobile Pong</title>
+    <title>Pong Game</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-user-select: none;
-            user-select: none;
         }
 
         body {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            min-height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             font-family: 'Arial', sans-serif;
-            overflow: hidden;
-            touch-action: none;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        #gameContainer {
-            width: 100%;
-            max-width: 500px;
-            height: 100vh;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        #gameCanvas {
-            background: #1a1a2e;
-            border: 3px solid #16213e;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            display: block;
-            touch-action: none;
-        }
-
-        #score {
-            position: absolute;
-            top: 20px;
-            width: 100%;
-            display: flex;
-            justify-content: space-around;
             color: white;
-            font-size: 32px;
-            font-weight: bold;
-            z-index: 10;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-        }
-
-        #startScreen, #gameOverScreen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            z-index: 20;
-        }
-
-        #gameOverScreen {
-            display: none;
+            padding: 20px 10px 10px 10px;
+            overflow-x: hidden;
         }
 
         h1 {
-            font-size: 48px;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        #gameTitle {
             margin-bottom: 20px;
-            text-shadow: 0 0 20px rgba(102, 126, 234, 0.8);
+            font-size: 1.5em;
+            color: #00bfff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        #gameCanvas {
+            border: 4px solid #00bfff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px #00bfff,
+                        0 0 20px #00bfff,
+                        0 0 30px #00bfff,
+                        0 0 40px #00bfff,
+                        inset 0 0 10px rgba(0, 191, 255, 0.3);
+            background: #000;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        .controls p {
+            margin: 5px 0;
+        }
+
+        #score {
+            margin-top: 15px;
+            font-size: 1.5em;
+            font-weight: bold;
         }
 
         button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 1em;
+            background: white;
+            color: #667eea;
             border: none;
-            color: white;
-            padding: 20px 50px;
-            font-size: 24px;
-            border-radius: 50px;
+            border-radius: 5px;
             cursor: pointer;
-            margin: 10px;
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
         }
 
         button:active {
             transform: scale(0.95);
-            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.4);
         }
 
-        .instruction {
-            font-size: 18px;
-            margin-top: 20px;
+        #nicknameScreen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #menuScreen {
+            display: none;
             text-align: center;
-            padding: 0 20px;
-            color: #aaa;
         }
 
-        #finalScore {
-            font-size: 36px;
-            margin: 20px 0;
+        #playerNamesScreen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #settingsScreen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #difficultyScreen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #gameScreen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .nickname-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        #nicknameInput {
+            padding: 15px 20px;
+            font-size: 1.2em;
+            border: 2px solid #00bfff;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            text-align: center;
+            width: 300px;
+            max-width: 90%;
+        }
+
+        #nicknameInput:focus {
+            outline: none;
+            border-color: #00ffff;
+            box-shadow: 0 0 10px #00bfff;
+        }
+
+        #nicknameInput::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .player-names-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .player-input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .player-input-group label {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #00bfff;
+        }
+
+        #player1Input, #player2Input {
+            padding: 15px 20px;
+            font-size: 1.1em;
+            border: 2px solid #00bfff;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            text-align: center;
+            width: 250px;
+            max-width: 90%;
+        }
+
+        #player1Input:focus, #player2Input:focus {
+            outline: none;
+            border-color: #00ffff;
+            box-shadow: 0 0 10px #00bfff;
+        }
+
+        #player1Input::placeholder, #player2Input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .settings-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .setting-group label {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #00bfff;
+        }
+
+        #winningScoreInput {
+            padding: 15px 20px;
+            font-size: 1.2em;
+            border: 2px solid #00bfff;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            text-align: center;
+            width: 100px;
+        }
+
+        #winningScoreInput:focus {
+            outline: none;
+            border-color: #00ffff;
+            box-shadow: 0 0 10px #00bfff;
+        }
+
+        #backgroundColorInput {
+            width: 150px;
+            height: 50px;
+            border: 2px solid #00bfff;
+            border-radius: 8px;
+            cursor: pointer;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px;
+        }
+
+        #backgroundColorInput:focus {
+            outline: none;
+            border-color: #00ffff;
+            box-shadow: 0 0 10px #00bfff;
+        }
+
+        .setting-description {
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            margin: 0;
+        }
+
+        .menu-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .menu-btn {
+            padding: 20px 40px;
+            font-size: 1.3em;
+            background: white;
             color: #667eea;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .menu-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .menu-btn:active {
+            transform: translateY(-2px);
+        }
+
+        #backBtn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 1em;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+        }
+
+        #backBtn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Touch controls - hidden as we now use canvas touch controls */
+        #touchControls {
+            display: none !important;
+        }
+
+        /* Mobile menu button - hidden by default */
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+                margin-bottom: 15px;
+            }
+
+            .menu-buttons {
+                flex-direction: column;
+                gap: 15px;
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .menu-btn {
+                padding: 15px 30px;
+                font-size: 1.1em;
+                width: 100%;
+            }
+
+            #score {
+                font-size: 1.2em;
+            }
+
+            .controls {
+                font-size: 0.9em;
+            }
+
+            button {
+                padding: 8px 16px;
+                font-size: 0.9em;
+            }
+
+            #gameCanvas {
+                border: 2px solid #00ffff;
+                box-shadow: 0 0 5px #00ffff,
+                            0 0 10px #00ffff,
+                            0 0 15px #00ffff,
+                            inset 0 0 8px rgba(0, 255, 255, 0.3);
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .menu-btn {
+                padding: 12px 24px;
+                font-size: 1em;
+            }
+
+            #score {
+                font-size: 1em;
+            }
+
+            .controls p {
+                font-size: 0.8em;
+            }
+        }
+
+        /* Fullscreen zoom styles */
+        body.zoomed {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body.zoomed #gameScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            z-index: 9999;
+            flex-direction: column;
+            padding: 0;
+            margin: 0;
+        }
+
+        body.zoomed h1,
+        body.zoomed .controls,
+        body.zoomed #resetBtn,
+        body.zoomed #backBtn,
+        body.zoomed #touchControls {
+            display: none;
+        }
+
+        /* Top scoreboard for mobile fullscreen */
+        body.zoomed #score {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #00ffff;
+            min-height: 50px;
+            order: -1;
+            border: 3px solid #00ffff;
+            box-shadow: 0 0 10px #00ffff,
+                        0 0 20px #00ffff,
+                        0 0 30px #00ffff,
+                        inset 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        /* Mobile menu button in fullscreen */
+        body.zoomed .mobile-menu-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ffff;
+            border: 3px solid #00ffff;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 1em;
+            font-weight: bold;
+            min-width: 60px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px #00ffff,
+                        0 0 20px #00ffff,
+                        0 0 30px #00ffff,
+                        inset 0 0 10px rgba(0, 255, 255, 0.3);
+            margin: 0;
+        }
+
+        body.zoomed .mobile-menu-btn:hover,
+        body.zoomed .mobile-menu-btn:active {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 15px #00ffff,
+                        0 0 30px #00ffff,
+                        0 0 45px #00ffff,
+                        inset 0 0 15px rgba(0, 255, 255, 0.5);
+            transform: none;
+        }
+
+        body.zoomed #gameCanvas {
+            flex: 1;
+            max-width: 100vw;
+            max-height: calc(100vh - 100px);
+            border: none;
+            border-radius: 0;
+            width: 100vw;
+            height: calc(100vh - 100px);
+        }
+
+        /* Landscape mode (desktop or landscape mobile) */
+        @media (min-width: 769px), (orientation: landscape) {
+            body.zoomed #gameScreen {
+                justify-content: flex-start;
+            }
+
+            body.zoomed #gameCanvas {
+                width: 100vw;
+                height: calc(100vh - 100px);
+            }
+
+            body.zoomed #score {
+                display: flex;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="gameContainer">
-        <div id="score">
-            <div id="playerScore">0</div>
-            <div id="aiScore">0</div>
-        </div>
+    <h1>Pong Game</h1>
+    <h2 id="gameTitle">First to 6</h2>
 
-        <div id="startScreen">
-            <h1>Mobile Pong</h1>
-            <p class="instruction">Slide your finger to move the paddle</p>
-            <p class="instruction">First to 5 points wins!</p>
-            <button id="startBtn">Start Game</button>
+    <!-- Nickname Input Screen -->
+    <div id="nicknameScreen">
+        <h2>Enter Your Nickname</h2>
+        <div class="nickname-form">
+            <input type="text" id="nicknameInput" placeholder="Enter your nickname..." maxlength="15">
+            <button class="menu-btn" id="continueBtn">Continue</button>
         </div>
+    </div>
 
-        <div id="gameOverScreen">
-            <h1 id="winnerText"></h1>
-            <div id="finalScore"></div>
-            <button id="restartBtn">Play Again</button>
+    <!-- Menu Screen -->
+    <div id="menuScreen">
+        <h2>Choose Game Mode</h2>
+        <div class="menu-buttons">
+            <button class="menu-btn" id="vsPlayerBtn">Play vs Player</button>
+            <button class="menu-btn" id="vsAIBtn">Play vs AI</button>
+            <button class="menu-btn" id="bonusBtn">Bonus Level</button>
+            <button class="menu-btn" id="settingsBtn">Settings</button>
         </div>
+    </div>
 
+    <!-- Player Names Screen -->
+    <div id="playerNamesScreen">
+        <h2>Enter Player Names</h2>
+        <div class="player-names-form">
+            <div class="player-input-group">
+                <label for="player1Input">Player 1:</label>
+                <input type="text" id="player1Input" placeholder="Enter Player 1 name..." maxlength="15">
+            </div>
+            <div class="player-input-group">
+                <label for="player2Input">Player 2:</label>
+                <input type="text" id="player2Input" placeholder="Enter Player 2 name..." maxlength="15">
+            </div>
+            <button class="menu-btn" id="startPlayerGameBtn">Start Game</button>
+        </div>
+        <button id="backToMainFromPlayersBtn">Back to Main Menu</button>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="settingsScreen">
+        <h2>Game Settings</h2>
+        <div class="settings-form">
+            <div class="setting-group">
+                <label for="winningScoreInput">Winning Score:</label>
+                <input type="number" id="winningScoreInput" min="1" max="50" value="6">
+                <p class="setting-description">First to reach this score wins</p>
+            </div>
+            <div class="setting-group">
+                <label for="backgroundColorInput">Background Color:</label>
+                <input type="color" id="backgroundColorInput" value="#667eea">
+                <p class="setting-description">Choose your background color</p>
+            </div>
+        </div>
+        <button id="saveSettingsBtn" class="menu-btn">Save Settings</button>
+        <button id="backToMainFromSettingsBtn">Back to Main Menu</button>
+    </div>
+
+    <!-- Difficulty Selection Screen -->
+    <div id="difficultyScreen">
+        <h2>Choose AI Difficulty</h2>
+        <div class="menu-buttons">
+            <button class="menu-btn" id="easyBtn">Easy</button>
+            <button class="menu-btn" id="mediumBtn">Medium</button>
+            <button class="menu-btn" id="hardBtn">Hard</button>
+        </div>
+        <button id="backToMainBtn">Back to Main Menu</button>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen">
         <canvas id="gameCanvas"></canvas>
+        <div id="score">Player 1: 0 | Player 2: 0</div>
+        <button id="mobileMenuBtn" class="mobile-menu-btn">Menu</button>
+        <div class="controls">
+            <p id="controlsText">Player 1 (Left): W/S keys | Player 2 (Right): Arrow Up/Down or I/K keys</p>
+            <p>Press Space to start/pause</p>
+        </div>
+        <div id="touchControls">
+            <div class="touch-area" id="leftTouchArea">
+                <div class="touch-label">Player 1</div>
+                <div class="touch-instruction">Swipe Up/Down</div>
+            </div>
+            <div class="touch-area" id="rightTouchArea">
+                <div class="touch-label">Player 2</div>
+                <div class="touch-instruction">Swipe Up/Down</div>
+            </div>
+        </div>
+        <button id="resetBtn">Reset Game</button>
+        <button id="backBtn">Back to Menu</button>
     </div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const startScreen = document.getElementById('startScreen');
-        const gameOverScreen = document.getElementById('gameOverScreen');
-        const startBtn = document.getElementById('startBtn');
-        const restartBtn = document.getElementById('restartBtn');
-        const playerScoreEl = document.getElementById('playerScore');
-        const aiScoreEl = document.getElementById('aiScore');
+        const scoreDisplay = document.getElementById('score');
+        const resetBtn = document.getElementById('resetBtn');
+        const nicknameScreen = document.getElementById('nicknameScreen');
+        const menuScreen = document.getElementById('menuScreen');
+        const playerNamesScreen = document.getElementById('playerNamesScreen');
+        const settingsScreen = document.getElementById('settingsScreen');
+        const difficultyScreen = document.getElementById('difficultyScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const nicknameInput = document.getElementById('nicknameInput');
+        const continueBtn = document.getElementById('continueBtn');
+        const player1Input = document.getElementById('player1Input');
+        const player2Input = document.getElementById('player2Input');
+        const startPlayerGameBtn = document.getElementById('startPlayerGameBtn');
+        const backToMainFromPlayersBtn = document.getElementById('backToMainFromPlayersBtn');
+        const winningScoreInput = document.getElementById('winningScoreInput');
+        const backgroundColorInput = document.getElementById('backgroundColorInput');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        const backToMainFromSettingsBtn = document.getElementById('backToMainFromSettingsBtn');
+        const vsPlayerBtn = document.getElementById('vsPlayerBtn');
+        const vsAIBtn = document.getElementById('vsAIBtn');
+        const bonusBtn = document.getElementById('bonusBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const easyBtn = document.getElementById('easyBtn');
+        const mediumBtn = document.getElementById('mediumBtn');
+        const hardBtn = document.getElementById('hardBtn');
+        const backToMainBtn = document.getElementById('backToMainBtn');
+        const backBtn = document.getElementById('backBtn');
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const controlsText = document.getElementById('controlsText');
+        const leftTouchArea = document.getElementById('leftTouchArea');
+        const rightTouchArea = document.getElementById('rightTouchArea');
 
-        // Set canvas size for portrait mobile
-        function resizeCanvas() {
-            const container = document.getElementById('gameContainer');
-            const maxWidth = Math.min(500, window.innerWidth - 20);
-            const maxHeight = window.innerHeight - 100;
+        // Mobile detection
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
 
-            canvas.width = maxWidth;
-            canvas.height = maxHeight;
+        // Lock screen orientation to portrait on mobile
+        if (isMobile && screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('portrait').catch(err => {
+                console.log('Screen orientation lock not supported or failed:', err);
+            });
         }
 
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
+        // Set canvas dimensions based on device
+        if (isMobile) {
+            // Portrait mode for mobile
+            canvas.width = 400;
+            canvas.height = 700;
+        } else {
+            // Landscape mode for desktop
+            canvas.width = 800;
+            canvas.height = 600;
+        }
+
+        // Touch tracking
+        const touchState = {
+            left: { active: false, startY: 0, currentY: 0, startX: 0, currentX: 0 },
+            right: { active: false, startY: 0, currentY: 0, startX: 0, currentX: 0 }
+        };
 
         // Game variables
         let gameRunning = false;
         let animationId;
+        let gameMode = null; // 'player', 'ai', or 'bonus'
+        let isBonusMode = false;
+        let aiDifficulty = 'medium'; // 'easy', 'medium', 'hard'
+        let playerNickname = 'Player'; // Default nickname for AI mode
+        let player1Name = 'Player 1'; // Player 1 name for vs mode
+        let player2Name = 'Player 2'; // Player 2 name for vs mode
+        let WINNING_SCORE = 6; // Make it a variable so it can be changed
 
+        // Paddle properties - different for mobile (portrait) vs desktop (landscape)
+        let paddleWidth, paddleHeight, paddleSpeed;
+
+        if (isMobile) {
+            // Portrait mode: paddles are horizontal (wider than tall)
+            paddleWidth = 100;
+            paddleHeight = 10;
+            paddleSpeed = 9;
+        } else {
+            // Landscape mode: paddles are vertical (taller than wide)
+            paddleWidth = 10;
+            paddleHeight = 100;
+            paddleSpeed = 9;
+        }
+
+        // Player paddle (bottom for mobile, left for desktop)
+        const player = {
+            x: isMobile ? canvas.width / 2 - paddleWidth / 2 : 20,
+            y: isMobile ? canvas.height - 20 - paddleHeight : canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            dy: 0,
+            score: 0
+        };
+
+        // Player 2 paddle (top for mobile - AI, right for desktop)
+        const player2 = {
+            x: isMobile ? canvas.width / 2 - paddleWidth / 2 : canvas.width - 20 - paddleWidth,
+            y: isMobile ? 20 : canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            dy: 0,
+            score: 0
+        };
+
+        // Ball properties - now an array for multiple balls
+        let balls = [];
+        let ballStartTimers = [0]; // Start with 1 ball, add more as points are scored
+        let gameStartTime = 0;
+        let totalBallsCreated = 0;
+        let whiteBallPoints = 0; // Track fractional points from white balls
+
+        // Single ball for regular modes
         const ball = {
             x: canvas.width / 2,
             y: canvas.height / 2,
             radius: 8,
-            speedX: 0,
-            speedY: 0,
-            speed: 5
+            speed: 5,
+            dx: 5,
+            dy: 5
         };
 
-        const paddleWidth = 80;
-        const paddleHeight = 12;
-
-        const player = {
-            x: canvas.width / 2 - paddleWidth / 2,
-            y: canvas.height - 30,
-            width: paddleWidth,
-            height: paddleHeight,
-            score: 0
+        // Key states
+        const keys = {
+            player1Up: false,
+            player1Down: false,
+            player2Up: false,
+            player2Down: false
         };
 
-        const ai = {
-            x: canvas.width / 2 - paddleWidth / 2,
-            y: 20,
-            width: paddleWidth,
-            height: paddleHeight,
-            score: 0,
-            speed: 3
-        };
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            // Player 1 controls (W/S)
+            if (e.key === 'w' || e.key === 'W') {
+                keys.player1Up = true;
+            }
+            if (e.key === 's' || e.key === 'S') {
+                keys.player1Down = true;
+            }
 
-        // Touch control
-        let touchX = null;
+            // Player 2 controls (Arrow keys and I/K)
+            if (e.key === 'ArrowUp' || e.key === 'i' || e.key === 'I') {
+                keys.player2Up = true;
+            }
+            if (e.key === 'ArrowDown' || e.key === 'k' || e.key === 'K') {
+                keys.player2Down = true;
+            }
 
-        canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (gameRunning) {
-                const touch = e.touches[0];
-                const rect = canvas.getBoundingClientRect();
-                touchX = touch.clientX - rect.left;
+            if (e.key === ' ') {
+                e.preventDefault();
+                toggleGame();
             }
         });
+
+        document.addEventListener('keyup', (e) => {
+            // Player 1 controls (W/S)
+            if (e.key === 'w' || e.key === 'W') {
+                keys.player1Up = false;
+            }
+            if (e.key === 's' || e.key === 'S') {
+                keys.player1Down = false;
+            }
+
+            // Player 2 controls (Arrow keys and I/K)
+            if (e.key === 'ArrowUp' || e.key === 'i' || e.key === 'I') {
+                keys.player2Up = false;
+            }
+            if (e.key === 'ArrowDown' || e.key === 'k' || e.key === 'K') {
+                keys.player2Down = false;
+            }
+        });
+
+        resetBtn.addEventListener('click', resetGame);
+
+        // Touch event listeners - now work anywhere on the canvas
+        const activeTouches = new Map(); // Track multiple simultaneous touches
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (!gameRunning) {
+                // Start game if not running
+                toggleGame();
+                return;
+            }
+
+            e.preventDefault();
+
+            // Handle each touch
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                const rect = canvas.getBoundingClientRect();
+                const touchX = touch.clientX - rect.left;
+                const touchY = touch.clientY - rect.top;
+
+                // Store initial touch position
+                activeTouches.set(touch.identifier, {
+                    startX: touchX,
+                    startY: touchY,
+                    currentX: touchX,
+                    currentY: touchY,
+                    isTopHalf: touchY < rect.height / 2,
+                    isLeftHalf: touchX < rect.width / 2
+                });
+            }
+        }, { passive: false });
 
         canvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
-            if (gameRunning) {
-                const touch = e.touches[0];
+
+            // Update all active touches
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                const touchData = activeTouches.get(touch.identifier);
+
+                if (!touchData) continue;
+
                 const rect = canvas.getBoundingClientRect();
-                touchX = touch.clientX - rect.left;
+                const touchX = (touch.clientX - rect.left) * (canvas.width / rect.width);
+                const touchY = (touch.clientY - rect.top) * (canvas.height / rect.height);
 
-                // Update player paddle position
-                player.x = touchX - player.width / 2;
+                touchData.currentX = touchX;
+                touchData.currentY = touchY;
 
-                // Keep paddle within canvas bounds
-                if (player.x < 0) player.x = 0;
-                if (player.x + player.width > canvas.width) {
-                    player.x = canvas.width - player.width;
+                if (isMobile) {
+                    // Portrait mode: direct positioning left/right
+                    if (touchData.isTopHalf) {
+                        // Top half controls player 2
+                        if (gameMode === 'player') {
+                            player2.x = touchX - player2.width / 2;
+                            // Keep paddle within canvas bounds
+                            if (player2.x < 0) player2.x = 0;
+                            if (player2.x + player2.width > canvas.width) {
+                                player2.x = canvas.width - player2.width;
+                            }
+                        }
+                    } else {
+                        // Bottom half controls player 1 (human player)
+                        player.x = touchX - player.width / 2;
+                        // Keep paddle within canvas bounds
+                        if (player.x < 0) player.x = 0;
+                        if (player.x + player.width > canvas.width) {
+                            player.x = canvas.width - player.width;
+                        }
+                    }
+                } else {
+                    // Landscape mode: swipe up/down
+                    const deltaY = touchData.currentY - touchData.startY;
+                    const threshold = 10;
+
+                    if (touchData.isLeftHalf) {
+                        // Left half controls player 1
+                        if (deltaY < -threshold) {
+                            keys.player1Up = true;
+                            keys.player1Down = false;
+                        } else if (deltaY > threshold) {
+                            keys.player1Down = true;
+                            keys.player1Up = false;
+                        } else {
+                            keys.player1Up = false;
+                            keys.player1Down = false;
+                        }
+                    } else {
+                        // Right half controls player 2
+                        if (gameMode === 'player') {
+                            if (deltaY < -threshold) {
+                                keys.player2Up = true;
+                                keys.player2Down = false;
+                            } else if (deltaY > threshold) {
+                                keys.player2Down = true;
+                                keys.player2Up = false;
+                            } else {
+                                keys.player2Up = false;
+                                keys.player2Down = false;
+                            }
+                        }
+                    }
                 }
             }
-        });
+        }, { passive: false });
 
         canvas.addEventListener('touchend', (e) => {
             e.preventDefault();
+
+            // Remove ended touches and reset keys
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                const touchData = activeTouches.get(touch.identifier);
+
+                if (touchData) {
+                    if (isMobile) {
+                        if (touchData.isTopHalf) {
+                            keys.player2Up = false;
+                            keys.player2Down = false;
+                        } else {
+                            keys.player1Up = false;
+                            keys.player1Down = false;
+                        }
+                    } else {
+                        if (touchData.isLeftHalf) {
+                            keys.player1Up = false;
+                            keys.player1Down = false;
+                        } else {
+                            keys.player2Up = false;
+                            keys.player2Down = false;
+                        }
+                    }
+
+                    activeTouches.delete(touch.identifier);
+                }
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+
+            // Clear all touches on cancel
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                activeTouches.delete(touch.identifier);
+            }
+
+            // Reset all keys
+            keys.player1Up = false;
+            keys.player1Down = false;
+            keys.player2Up = false;
+            keys.player2Down = false;
+        }, { passive: false });
+
+        // Responsive canvas sizing
+        function resizeCanvas() {
+            if (isMobile) {
+                // Portrait mode: 400x700 aspect ratio
+                // Account for border (2px each side) = 4px + padding (10px each side) = 20px + buffer for shadow = 30px total
+                const maxWidth = Math.min(400, window.innerWidth - 30);
+                const maxHeight = Math.min(700, window.innerHeight - 200);
+                const aspectRatio = 400 / 700;
+
+                let newWidth = maxWidth;
+                let newHeight = newWidth / aspectRatio;
+
+                if (newHeight > maxHeight) {
+                    newHeight = maxHeight;
+                    newWidth = newHeight * aspectRatio;
+                }
+
+                canvas.style.width = newWidth + 'px';
+                canvas.style.height = newHeight + 'px';
+            } else {
+                // Landscape mode: 800x600 aspect ratio
+                // Account for border (4px each side) = 8px + padding (10px each side) = 20px + buffer = 30px total
+                const maxWidth = Math.min(800, window.innerWidth - 30);
+                const maxHeight = Math.min(600, window.innerHeight - 400);
+                const aspectRatio = 800 / 600;
+
+                let newWidth = maxWidth;
+                let newHeight = newWidth / aspectRatio;
+
+                if (newHeight > maxHeight) {
+                    newHeight = maxHeight;
+                    newWidth = newHeight * aspectRatio;
+                }
+
+                canvas.style.width = newWidth + 'px';
+                canvas.style.height = newHeight + 'px';
+            }
+        }
+
+        // Initial resize and add listener
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Nickname input event listeners
+        continueBtn.addEventListener('click', saveNickname);
+        nicknameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                saveNickname();
+            }
         });
 
-        // Initialize ball
+        // Player names input event listeners
+        startPlayerGameBtn.addEventListener('click', savePlayerNames);
+        player1Input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                savePlayerNames();
+            }
+        });
+        player2Input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                savePlayerNames();
+            }
+        });
+
+        // Menu button event listeners
+        vsPlayerBtn.addEventListener('click', showPlayerNamesMenu);
+        vsAIBtn.addEventListener('click', showDifficultyMenu);
+        bonusBtn.addEventListener('click', () => startGame('bonus'));
+        settingsBtn.addEventListener('click', showSettingsMenu);
+        
+        // Player names event listeners
+        backToMainFromPlayersBtn.addEventListener('click', backToMainMenu);
+
+        // Settings event listeners
+        saveSettingsBtn.addEventListener('click', saveSettings);
+        backToMainFromSettingsBtn.addEventListener('click', backToMainMenu);
+
+        // Difficulty selection event listeners
+        easyBtn.addEventListener('click', () => startGameWithDifficulty('ai', 'easy'));
+        mediumBtn.addEventListener('click', () => startGameWithDifficulty('ai', 'medium'));
+        hardBtn.addEventListener('click', () => startGameWithDifficulty('ai', 'hard'));
+        backToMainBtn.addEventListener('click', backToMainMenu);
+        backBtn.addEventListener('click', backToMenu);
+        mobileMenuBtn.addEventListener('click', backToMenu);
+
+        // Draw functions
+        function drawRect(x, y, width, height, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, width, height);
+        }
+
+        function drawRectWithBorder(x, y, width, height, fillColor, borderColor, borderWidth = 2) {
+            // Draw border
+            ctx.fillStyle = borderColor;
+            ctx.fillRect(x - borderWidth, y - borderWidth, width + 2 * borderWidth, height + 2 * borderWidth);
+            
+            // Draw fill
+            ctx.fillStyle = fillColor;
+            ctx.fillRect(x, y, width, height);
+        }
+
+        function drawCircle(x, y, radius, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Initialize balls for bonus mode
+        function initializeBalls() {
+            balls = [];
+            ballStartTimers = [0]; // Start with 1 ball
+            totalBallsCreated = 0;
+            whiteBallPoints = 0; // Reset fractional points
+            
+            // Create the first red ball
+            balls.push({
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                radius: 8,
+                speed: 5,
+                dx: 0,
+                dy: 0,
+                active: false,
+                startTime: 0,
+                isRedBall: true // Mark as red ball
+            });
+            totalBallsCreated = 1;
+        }
+
+        // Activate a ball when its start time is reached
+        function activateBall(ball) {
+            if (!ball.active) {
+                ball.active = true;
+                if (isMobile) {
+                    // Portrait mode: ball primarily moves up/down
+                    ball.dy = (Math.random() > 0.5 ? 1 : -1) * ball.speed;
+                    ball.dx = (Math.random() * 2 - 1) * ball.speed;
+                } else {
+                    // Landscape mode: ball primarily moves left/right
+                    ball.dx = (Math.random() > 0.5 ? 1 : -1) * ball.speed;
+                    ball.dy = (Math.random() * 2 - 1) * ball.speed;
+                }
+            }
+        }
+
+        // Add a new white ball when a point is scored in bonus mode
+        function addNewBall() {
+            if (isBonusMode) {
+                const newBall = {
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    radius: 8,
+                    speed: 5,
+                    dx: 0,
+                    dy: 0,
+                    active: false,
+                    startTime: Date.now() - gameStartTime + 1000, // Start after 1 second
+                    isRedBall: false // Mark as white ball
+                };
+                
+                balls.push(newBall);
+                ballStartTimers.push(newBall.startTime);
+                totalBallsCreated++;
+            }
+        }
+
+        // Handle scoring for different ball types in bonus mode
+        function handleBonusScoring(ball, playerScored) {
+            if (ball.isRedBall) {
+                // Red ball scores 1 full point and spawns a new ball
+                if (playerScored) {
+                    player.score++;
+                } else {
+                    player2.score++;
+                }
+                addNewBall(); // Spawn a new white ball
+            } else {
+                // White ball scores 0.2 points
+                whiteBallPoints += 0.2;
+                if (playerScored) {
+                    player.score += 0.2;
+                } else {
+                    player2.score += 0.2;
+                }
+                
+                // Check if white ball points add up to 1 full point
+                if (whiteBallPoints >= 1) {
+                    whiteBallPoints -= 1; // Reset fractional points
+                    addNewBall(); // Spawn a new white ball
+                }
+            }
+        }
+
+        function drawNet() {
+            // Save context for glow effect
+            ctx.save();
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#00ffff';
+
+            if (isMobile) {
+                // Portrait mode: horizontal net
+                const netWidth = 10;
+                const netHeight = 4;
+                const gap = 15;
+
+                for (let i = 0; i < canvas.width; i += netWidth + gap) {
+                    drawRect(i, canvas.height / 2 - netHeight / 2, netWidth, netHeight, '#00ffff');
+                }
+            } else {
+                // Landscape mode: vertical net
+                const netWidth = 4;
+                const netHeight = 10;
+                const gap = 15;
+
+                for (let i = 0; i < canvas.height; i += netHeight + gap) {
+                    drawRect(canvas.width / 2 - netWidth / 2, i, netWidth, netHeight, '#00ffff');
+                }
+            }
+
+            // Restore context
+            ctx.restore();
+        }
+
+        function drawGame() {
+            // Clear canvas
+            drawRect(0, 0, canvas.width, canvas.height, '#000');
+
+            // Draw net
+            drawNet();
+
+            // Draw paddles
+            drawRectWithBorder(player.x, player.y, player.width, player.height, '#00bfff', '#ffffff', 2);
+            drawRectWithBorder(player2.x, player2.y, player2.width, player2.height, '#00bfff', '#ffffff', 2);
+
+            // Draw balls
+            if (isBonusMode) {
+                balls.forEach(ball => {
+                    if (ball.active) {
+                        if (ball.isRedBall) {
+                            drawCircle(ball.x, ball.y, ball.radius, '#ff0000'); // Red ball
+                        } else {
+                            drawCircle(ball.x, ball.y, ball.radius, '#fff'); // White ball
+                        }
+                    }
+                });
+            } else {
+                // Single ball for regular modes
+                drawCircle(ball.x, ball.y, ball.radius, '#fff');
+            }
+        }
+
+        // Update player 1 paddle
+        function updatePlayer() {
+            if (isMobile) {
+                // Portrait mode: move left/right
+                if (keys.player1Up && player.x > 0) {
+                    player.x -= paddleSpeed;
+                }
+                if (keys.player1Down && player.x + player.width < canvas.width) {
+                    player.x += paddleSpeed;
+                }
+            } else {
+                // Landscape mode: move up/down
+                if (keys.player1Up && player.y > 0) {
+                    player.y -= paddleSpeed;
+                }
+                if (keys.player1Down && player.y + player.height < canvas.height) {
+                    player.y += paddleSpeed;
+                }
+            }
+        }
+
+        // Update player 2 paddle
+        function updatePlayer2() {
+            if (gameMode === 'ai') {
+                updateAI();
+            } else {
+                if (isMobile) {
+                    // Portrait mode: move left/right
+                    if (keys.player2Up && player2.x > 0) {
+                        player2.x -= paddleSpeed;
+                    }
+                    if (keys.player2Down && player2.x + player2.width < canvas.width) {
+                        player2.x += paddleSpeed;
+                    }
+                } else {
+                    // Landscape mode: move up/down
+                    if (keys.player2Up && player2.y > 0) {
+                        player2.y -= paddleSpeed;
+                    }
+                    if (keys.player2Down && player2.y + player2.height < canvas.height) {
+                        player2.y += paddleSpeed;
+                    }
+                }
+            }
+        }
+
+        // AI controller for player 2 paddle
+        function updateAI() {
+            // Adjust AI speed and accuracy based on difficulty
+            let aiSpeed, tolerance, reactionDelay;
+            
+            switch(aiDifficulty) {
+                case 'easy':
+                    aiSpeed = paddleSpeed * 0.4; // Much slower
+                    tolerance = 20; // Less accurate
+                    reactionDelay = 100; // Slower reaction
+                    break;
+                case 'medium':
+                    aiSpeed = paddleSpeed * 0.7; // Slightly slower
+                    tolerance = 10; // Normal accuracy
+                    reactionDelay = 50; // Normal reaction
+                    break;
+                case 'hard':
+                    aiSpeed = paddleSpeed * 0.9; // Almost as fast as player
+                    tolerance = 5; // Very accurate
+                    reactionDelay = 0; // Instant reaction
+                    break;
+                default:
+                    aiSpeed = paddleSpeed * 0.7;
+                    tolerance = 10;
+                    reactionDelay = 50;
+            }
+
+            if (isBonusMode) {
+                // Bonus mode: AI tracks all active balls and tries to defend against the most threatening one
+                const activeBalls = balls.filter(ball => ball.active);
+                if (activeBalls.length === 0) return;
+
+                // Find the most threatening ball (closest ball moving towards AI)
+                let targetBall = null;
+                let minDistance = Infinity;
+
+                activeBalls.forEach(ball => {
+                    let distance;
+                    let isMovingTowardsAI = false;
+                    
+                    if (isMobile) {
+                        distance = Math.abs(ball.x - (player2.x + player2.width / 2));
+                        isMovingTowardsAI = ball.dy < 0; // Moving up towards AI
+                    } else {
+                        distance = Math.abs(ball.y - (player2.y + player2.height / 2));
+                        isMovingTowardsAI = ball.dx > 0; // Moving right towards AI
+                    }
+
+                    // Prioritize balls that are moving towards AI and are close
+                    if (isMovingTowardsAI && distance < minDistance) {
+                        minDistance = distance;
+                        targetBall = ball;
+                    }
+                });
+
+                // If no ball is moving towards AI, target the closest one
+                if (!targetBall) {
+                    activeBalls.forEach(ball => {
+                        let distance;
+                        if (isMobile) {
+                            distance = Math.abs(ball.x - (player2.x + player2.width / 2));
+                        } else {
+                            distance = Math.abs(ball.y - (player2.y + player2.height / 2));
+                        }
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            targetBall = ball;
+                        }
+                    });
+                }
+
+                if (targetBall) {
+                    if (isMobile) {
+                        // Portrait mode: AI moves left/right (AI is at top)
+                        const paddleCenter = player2.x + player2.width / 2;
+                        const ballCenter = targetBall.x;
+
+                        // Move towards the target ball
+                        if (ballCenter < paddleCenter - tolerance && player2.x > 0) {
+                            player2.x -= aiSpeed;
+                        } else if (ballCenter > paddleCenter + tolerance && player2.x + player2.width < canvas.width) {
+                            player2.x += aiSpeed;
+                        }
+                    } else {
+                        // Landscape mode: AI moves up/down
+                        const paddleCenter = player2.y + player2.height / 2;
+                        const ballCenter = targetBall.y;
+
+                        // Move towards the target ball
+                        if (ballCenter < paddleCenter - tolerance && player2.y > 0) {
+                            player2.y -= aiSpeed;
+                        } else if (ballCenter > paddleCenter + tolerance && player2.y + player2.height < canvas.height) {
+                            player2.y += aiSpeed;
+                        }
+                    }
+                } else {
+                    // No active balls, return to center
+                    if (isMobile) {
+                        const targetX = canvas.width / 2 - player2.width / 2;
+                        if (player2.x < targetX - tolerance) {
+                            player2.x += aiSpeed * 0.5;
+                        } else if (player2.x > targetX + tolerance) {
+                            player2.x -= aiSpeed * 0.5;
+                        }
+                    } else {
+                        const targetY = canvas.height / 2 - player2.height / 2;
+                        if (player2.y < targetY - tolerance) {
+                            player2.y += aiSpeed * 0.5;
+                        } else if (player2.y > targetY + tolerance) {
+                            player2.y -= aiSpeed * 0.5;
+                        }
+                    }
+                }
+            } else {
+                // Regular mode: AI tracks single ball
+            if (isMobile) {
+                // Portrait mode: AI moves left/right (AI is at top)
+                const paddleCenter = player2.x + player2.width / 2;
+                const ballCenter = ball.x;
+
+                // Only move if ball is moving towards AI (upward - negative dy)
+                if (ball.dy < 0) {
+                    if (ballCenter < paddleCenter - tolerance && player2.x > 0) {
+                        player2.x -= aiSpeed;
+                    } else if (ballCenter > paddleCenter + tolerance && player2.x + player2.width < canvas.width) {
+                        player2.x += aiSpeed;
+                    }
+                } else {
+                    // Return to center when ball is moving away
+                    const targetX = canvas.width / 2 - player2.width / 2;
+                    if (player2.x < targetX - tolerance) {
+                        player2.x += aiSpeed * 0.5;
+                    } else if (player2.x > targetX + tolerance) {
+                        player2.x -= aiSpeed * 0.5;
+                    }
+                }
+            } else {
+                // Landscape mode: AI moves up/down
+                const paddleCenter = player2.y + player2.height / 2;
+                const ballCenter = ball.y;
+
+                // Only move if ball is moving towards AI
+                if (ball.dx > 0) {
+                    if (ballCenter < paddleCenter - tolerance && player2.y > 0) {
+                        player2.y -= aiSpeed;
+                    } else if (ballCenter > paddleCenter + tolerance && player2.y + player2.height < canvas.height) {
+                        player2.y += aiSpeed;
+                    }
+                } else {
+                    // Return to center when ball is moving away
+                    const targetY = canvas.height / 2 - player2.height / 2;
+                    if (player2.y < targetY - tolerance) {
+                        player2.y += aiSpeed * 0.5;
+                    } else if (player2.y > targetY + tolerance) {
+                        player2.y -= aiSpeed * 0.5;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Update ball for bonus mode
+        function updateBallBonus() {
+            const currentTime = Date.now() - gameStartTime;
+            
+            // Activate balls based on their start times
+            balls.forEach(ball => {
+                if (!ball.active && currentTime >= ball.startTime) {
+                    activateBall(ball);
+                }
+            });
+
+            // Update active balls
+            balls.forEach(ball => {
+                if (ball.active) {
+                    ball.x += ball.dx;
+                    ball.y += ball.dy;
+
+                    if (isMobile) {
+                        // Portrait mode: ball moves up/down, bounces off left/right walls
+                        if (ball.x - ball.radius < 0 || ball.x + ball.radius > canvas.width) {
+                            ball.dx *= -1;
+                        }
+
+                        // Player 2 paddle collision (top - AI)
+                        if (ball.y - ball.radius < player2.y + player2.height &&
+                            ball.x > player2.x &&
+                            ball.x < player2.x + player2.width &&
+                            ball.dy < 0) {
+
+                            ball.speed += 0.3;
+                            let hitPos = (ball.x - (player2.x + player2.width / 2)) / (player2.width / 2);
+                            let angle = hitPos * Math.PI / 4;
+                            ball.dx = ball.speed * Math.sin(angle);
+                            ball.dy = ball.speed * Math.cos(angle);
+                        }
+
+                        // Player 1 paddle collision (bottom - human player)
+                        if (ball.y + ball.radius > player.y &&
+                            ball.x > player.x &&
+                            ball.x < player.x + player.width &&
+                            ball.dy > 0) {
+
+                            ball.speed += 0.3;
+                            let hitPos = (ball.x - (player.x + player.width / 2)) / (player.width / 2);
+                            let angle = hitPos * Math.PI / 4;
+                            ball.dx = ball.speed * Math.sin(angle);
+                            ball.dy = -ball.speed * Math.cos(angle);
+                        }
+
+                        // Score points (top/bottom)
+                        if (ball.y - ball.radius < 0) {
+                            handleBonusScoring(ball, true); // Player scored
+                            resetBallBonus(ball);
+                        } else if (ball.y + ball.radius > canvas.height) {
+                            handleBonusScoring(ball, false); // AI scored
+                            resetBallBonus(ball);
+                        }
+
+                    } else {
+                        // Landscape mode: ball moves left/right, bounces off top/bottom walls
+                        if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
+                            ball.dy *= -1;
+                        }
+
+                        // Player paddle collision (left)
+                        if (ball.x - ball.radius < player.x + player.width &&
+                            ball.y > player.y &&
+                            ball.y < player.y + player.height &&
+                            ball.dx < 0) {
+
+                            ball.speed += 0.3;
+                            let hitPos = (ball.y - (player.y + player.height / 2)) / (player.height / 2);
+                            let angle = hitPos * Math.PI / 4;
+                            ball.dy = ball.speed * Math.sin(angle);
+                            ball.dx = ball.speed * Math.cos(angle);
+                        }
+
+                        // Player 2 paddle collision (right)
+                        if (ball.x + ball.radius > player2.x &&
+                            ball.y > player2.y &&
+                            ball.y < player2.y + player2.height &&
+                            ball.dx > 0) {
+
+                            ball.speed += 0.3;
+                            let hitPos = (ball.y - (player2.y + player2.height / 2)) / (player2.height / 2);
+                            let angle = hitPos * Math.PI / 4;
+                            ball.dy = ball.speed * Math.sin(angle);
+                            ball.dx = -ball.speed * Math.cos(angle);
+                        }
+
+                        // Score points (left/right)
+                        if (ball.x - ball.radius < 0) {
+                            handleBonusScoring(ball, false); // AI scored
+                            resetBallBonus(ball);
+                        } else if (ball.x + ball.radius > canvas.width) {
+                            handleBonusScoring(ball, true); // Player scored
+                            resetBallBonus(ball);
+                        }
+                    }
+                }
+            });
+
+            updateScore();
+        }
+
+        // Reset a single ball in bonus mode
+        function resetBallBonus(ball) {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.speed = 5;
+            ball.active = false;
+            ball.startTime = Date.now() - gameStartTime + 1000; // Reactivate after 1 second
+        }
+
+        // Update ball for regular modes
+        function updateBall() {
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            if (isMobile) {
+                // Portrait mode: ball moves up/down, bounces off left/right walls
+
+                // Left and right wall collision (bounce)
+                if (ball.x - ball.radius < 0 || ball.x + ball.radius > canvas.width) {
+                    ball.dx *= -1;
+                }
+
+                // Player 2 paddle collision (top - AI)
+                if (ball.y - ball.radius < player2.y + player2.height &&
+                    ball.x > player2.x &&
+                    ball.x < player2.x + player2.width &&
+                    ball.dy < 0) {
+
+                    // Increase ball speed on hit
+                    ball.speed += 0.3;
+
+                    // Calculate where ball hit the paddle (horizontally)
+                    let hitPos = (ball.x - (player2.x + player2.width / 2)) / (player2.width / 2);
+
+                    // Set angle based on hit position, with increased speed
+                    let angle = hitPos * Math.PI / 4; // Max 45 degrees
+                    ball.dx = ball.speed * Math.sin(angle);
+                    ball.dy = ball.speed * Math.cos(angle);
+                }
+
+                // Player 1 paddle collision (bottom - human player)
+                if (ball.y + ball.radius > player.y &&
+                    ball.x > player.x &&
+                    ball.x < player.x + player.width &&
+                    ball.dy > 0) {
+
+                    // Increase ball speed on hit
+                    ball.speed += 0.3;
+
+                    // Calculate where ball hit the paddle (horizontally)
+                    let hitPos = (ball.x - (player.x + player.width / 2)) / (player.width / 2);
+
+                    // Set angle based on hit position, with increased speed
+                    let angle = hitPos * Math.PI / 4; // Max 45 degrees
+                    ball.dx = ball.speed * Math.sin(angle);
+                    ball.dy = -ball.speed * Math.cos(angle);
+                }
+
+                // Score points (top/bottom)
+                // Player 1 is at bottom, Player 2 is at top
+                if (ball.y - ball.radius < 0) {
+                    // Ball went off top - Player 1 (bottom) scores
+                    player.score++;
+                    resetBall();
+                } else if (ball.y + ball.radius > canvas.height) {
+                    // Ball went off bottom - Player 2 (top) scores
+                    player2.score++;
+                    resetBall();
+                }
+
+            } else {
+                // Landscape mode: ball moves left/right, bounces off top/bottom walls
+
+                // Top and bottom collision (bounce)
+                if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
+                    ball.dy *= -1;
+                }
+
+                // Player paddle collision (left)
+                if (ball.x - ball.radius < player.x + player.width &&
+                    ball.y > player.y &&
+                    ball.y < player.y + player.height &&
+                    ball.dx < 0) {
+
+                    // Increase ball speed on hit
+                    ball.speed += 0.3;
+
+                    // Calculate where ball hit the paddle (vertically)
+                    let hitPos = (ball.y - (player.y + player.height / 2)) / (player.height / 2);
+
+                    // Set angle based on hit position, with increased speed
+                    let angle = hitPos * Math.PI / 4; // Max 45 degrees
+                    ball.dy = ball.speed * Math.sin(angle);
+                    ball.dx = ball.speed * Math.cos(angle);
+                }
+
+                // Player 2 paddle collision (right)
+                if (ball.x + ball.radius > player2.x &&
+                    ball.y > player2.y &&
+                    ball.y < player2.y + player2.height &&
+                    ball.dx > 0) {
+
+                    // Increase ball speed on hit
+                    ball.speed += 0.3;
+
+                    // Calculate where ball hit the paddle (vertically)
+                    let hitPos = (ball.y - (player2.y + player2.height / 2)) / (player2.height / 2);
+
+                    // Set angle based on hit position, with increased speed
+                    let angle = hitPos * Math.PI / 4; // Max 45 degrees
+                    ball.dy = ball.speed * Math.sin(angle);
+                    ball.dx = -ball.speed * Math.cos(angle);
+                }
+
+                // Score points (left/right)
+                if (ball.x - ball.radius < 0) {
+                    player2.score++;
+                    resetBall();
+                } else if (ball.x + ball.radius > canvas.width) {
+                    player.score++;
+                    resetBall();
+                }
+            }
+
+            updateScore();
+        }
+
         function resetBall() {
             ball.x = canvas.width / 2;
             ball.y = canvas.height / 2;
+            ball.speed = 5;
 
-            const angle = (Math.random() * Math.PI / 3) - Math.PI / 6; // Random angle between -30 and 30 degrees
-            const direction = Math.random() < 0.5 ? 1 : -1;
-
-            ball.speedX = ball.speed * Math.sin(angle);
-            ball.speedY = ball.speed * Math.cos(angle) * direction;
-        }
-
-        // Draw functions
-        function drawBall() {
-            ctx.beginPath();
-            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-            ctx.fillStyle = '#00ff88';
-            ctx.fill();
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = '#00ff88';
-            ctx.closePath();
-            ctx.shadowBlur = 0;
-        }
-
-        function drawPaddle(paddle) {
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = '#ffffff';
-            ctx.shadowBlur = 0;
-        }
-
-        function drawCenterLine() {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([10, 10]);
-            ctx.beginPath();
-            ctx.moveTo(0, canvas.height / 2);
-            ctx.lineTo(canvas.width, canvas.height / 2);
-            ctx.stroke();
-            ctx.setLineDash([]);
-        }
-
-        // AI movement
-        function updateAI() {
-            const aiCenter = ai.x + ai.width / 2;
-            const ballCenter = ball.x;
-
-            if (aiCenter < ballCenter - 10) {
-                ai.x += ai.speed;
-            } else if (aiCenter > ballCenter + 10) {
-                ai.x -= ai.speed;
-            }
-
-            // Keep AI paddle within canvas bounds
-            if (ai.x < 0) ai.x = 0;
-            if (ai.x + ai.width > canvas.width) {
-                ai.x = canvas.width - ai.width;
+            if (isMobile) {
+                // Portrait mode: ball primarily moves up/down
+                ball.dy = (Math.random() > 0.5 ? 1 : -1) * ball.speed;
+                ball.dx = (Math.random() * 2 - 1) * ball.speed;
+            } else {
+                // Landscape mode: ball primarily moves left/right
+                ball.dx = (Math.random() > 0.5 ? 1 : -1) * ball.speed;
+                ball.dy = (Math.random() * 2 - 1) * ball.speed;
             }
         }
 
-        // Ball physics
-        function updateBall() {
-            ball.x += ball.speedX;
-            ball.y += ball.speedY;
+        function saveNickname() {
+            const nickname = nicknameInput.value.trim();
+            if (nickname.length > 0) {
+                playerNickname = nickname;
+            } else {
+                playerNickname = 'Player';
+            }
+            
+            // Hide nickname screen and show menu
+            nicknameScreen.style.display = 'none';
+            menuScreen.style.display = 'block';
+        }
 
-            // Wall collision (left and right)
-            if (ball.x - ball.radius <= 0 || ball.x + ball.radius >= canvas.width) {
-                ball.speedX = -ball.speedX;
+        function showPlayerNamesMenu() {
+            menuScreen.style.display = 'none';
+            playerNamesScreen.style.display = 'flex';
+        }
+
+        function showSettingsMenu() {
+            menuScreen.style.display = 'none';
+            settingsScreen.style.display = 'flex';
+        }
+
+        // Load saved settings from localStorage
+        function loadSettings() {
+            const savedWinningScore = localStorage.getItem('pongWinningScore');
+            if (savedWinningScore) {
+                WINNING_SCORE = parseInt(savedWinningScore);
+                winningScoreInput.value = WINNING_SCORE;
             }
 
-            // Player paddle collision
-            if (ball.y + ball.radius >= player.y &&
-                ball.y - ball.radius <= player.y + player.height &&
-                ball.x >= player.x &&
-                ball.x <= player.x + player.width) {
-
-                ball.speedY = -Math.abs(ball.speedY);
-
-                // Add spin based on where ball hits paddle
-                const hitPos = (ball.x - player.x) / player.width;
-                ball.speedX = (hitPos - 0.5) * ball.speed * 2;
+            // Load and apply background color
+            const savedBackgroundColor = localStorage.getItem('pongBackgroundColor');
+            if (savedBackgroundColor) {
+                backgroundColorInput.value = savedBackgroundColor;
+                applyBackgroundColor(savedBackgroundColor);
             }
 
-            // AI paddle collision
-            if (ball.y - ball.radius <= ai.y + ai.height &&
-                ball.y + ball.radius >= ai.y &&
-                ball.x >= ai.x &&
-                ball.x <= ai.x + ai.width) {
+            // Always update the title to show the current winning score
+            document.getElementById('gameTitle').textContent = `First to ${WINNING_SCORE}`;
+        }
 
-                ball.speedY = Math.abs(ball.speedY);
+        // Apply background color to body
+        function applyBackgroundColor(color) {
+            document.body.style.background = color;
+        }
 
-                // Add spin based on where ball hits paddle
-                const hitPos = (ball.x - ai.x) / ai.width;
-                ball.speedX = (hitPos - 0.5) * ball.speed * 2;
+        function saveSettings() {
+            const newWinningScore = parseInt(winningScoreInput.value);
+            if (newWinningScore >= 1 && newWinningScore <= 50) {
+                WINNING_SCORE = newWinningScore;
+                // Save to localStorage
+                localStorage.setItem('pongWinningScore', WINNING_SCORE.toString());
+                // Update the game title to reflect the new winning score
+                document.getElementById('gameTitle').textContent = `First to ${WINNING_SCORE}`;
             }
 
-            // Score points
-            if (ball.y - ball.radius <= 0) {
-                player.score++;
-                playerScoreEl.textContent = player.score;
-                checkWin();
+            // Save and apply background color
+            const newBackgroundColor = backgroundColorInput.value;
+            localStorage.setItem('pongBackgroundColor', newBackgroundColor);
+            applyBackgroundColor(newBackgroundColor);
+
+            // Hide settings screen and show menu
+            settingsScreen.style.display = 'none';
+            menuScreen.style.display = 'block';
+        }
+
+        function savePlayerNames() {
+            const name1 = player1Input.value.trim();
+            const name2 = player2Input.value.trim();
+            
+            if (name1.length > 0) {
+                player1Name = name1;
+            } else {
+                player1Name = 'Player 1';
+            }
+            
+            if (name2.length > 0) {
+                player2Name = name2;
+            } else {
+                player2Name = 'Player 2';
+            }
+            
+            // Hide player names screen and start game
+            playerNamesScreen.style.display = 'none';
+            startGame('player');
+        }
+
+        function updateScore() {
+            if (gameMode === 'ai') {
+                if (isBonusMode) {
+                    // Show fractional scores in bonus mode
+                    scoreDisplay.textContent = `${playerNickname}: ${player.score.toFixed(1)} | AI: ${player2.score.toFixed(1)}`;
+                } else {
+                    scoreDisplay.textContent = `${playerNickname}: ${player.score} | AI: ${player2.score}`;
+                }
+            } else {
+                scoreDisplay.textContent = `${player1Name}: ${player.score} | ${player2Name}: ${player2.score}`;
+            }
+            
+            // Check for winner (use Math.floor for fractional scores)
+            if (Math.floor(player.score) >= WINNING_SCORE || Math.floor(player2.score) >= WINNING_SCORE) {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            gameRunning = false;
+            let winner;
+            
+            if (Math.floor(player.score) >= WINNING_SCORE) {
+                if (gameMode === 'ai') {
+                    winner = `${playerNickname} Wins!`;
+                } else {
+                    winner = `${player1Name} Wins!`;
+                }
+            } else {
+                if (gameMode === 'ai') {
+                    winner = "You Lose!";
+                } else {
+                    winner = `${player2Name} Wins!`;
+                }
+            }
+            
+            scoreDisplay.textContent = winner;
+            scoreDisplay.style.color = '#00bfff';
+            scoreDisplay.style.fontSize = '2em';
+            scoreDisplay.style.fontWeight = 'bold';
+        }
+
+        function toggleGame() {
+            gameRunning = !gameRunning;
+            if (gameRunning && !animationId) {
+                gameLoop();
+            }
+        }
+
+        function resetGame() {
+            player.score = 0;
+            player2.score = 0;
+
+            if (isMobile) {
+                // Portrait mode: reset paddles to center horizontally
+                player.x = canvas.width / 2 - paddleWidth / 2;
+                player.y = canvas.height - 20 - paddleHeight;
+                player2.x = canvas.width / 2 - paddleWidth / 2;
+                player2.y = 20;
+            } else {
+                // Landscape mode: reset paddles to center vertically
+                player.x = 20;
+                player.y = canvas.height / 2 - paddleHeight / 2;
+                player2.x = canvas.width - 20 - paddleWidth;
+                player2.y = canvas.height / 2 - paddleHeight / 2;
+            }
+
+            if (isBonusMode) {
+                // Reset bonus mode
+                initializeBalls();
+                gameStartTime = Date.now();
+            } else {
+                // Reset regular mode
                 resetBall();
             }
-
-            if (ball.y + ball.radius >= canvas.height) {
-                ai.score++;
-                aiScoreEl.textContent = ai.score;
-                checkWin();
-                resetBall();
-            }
-        }
-
-        // Check win condition
-        function checkWin() {
-            const winScore = 5;
-            if (player.score >= winScore || ai.score >= winScore) {
-                gameRunning = false;
-                const winner = player.score >= winScore ? 'You Win!' : 'AI Wins!';
-                document.getElementById('winnerText').textContent = winner;
-                document.getElementById('finalScore').textContent = `${player.score} - ${ai.score}`;
-                gameOverScreen.style.display = 'flex';
-            }
+            
+            // Reset score display styling
+            scoreDisplay.style.color = '';
+            scoreDisplay.style.fontSize = '';
+            scoreDisplay.style.fontWeight = '';
+            
+            updateScore();
+            gameRunning = false;
+            drawGame();
         }
 
         // Game loop
         function gameLoop() {
-            if (!gameRunning) return;
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            drawCenterLine();
-            drawBall();
-            drawPaddle(player);
-            drawPaddle(ai);
-
-            updateBall();
-            updateAI();
-
-            animationId = requestAnimationFrame(gameLoop);
+            if (gameRunning) {
+                updatePlayer();
+                updatePlayer2();
+                if (isBonusMode) {
+                    // Bonus mode with AI and 2 balls
+                    updateBallBonus();
+                } else {
+                    // Regular modes
+                updateBall();
+                }
+                drawGame();
+                animationId = requestAnimationFrame(gameLoop);
+            } else {
+                animationId = null;
+            }
         }
 
-        // Start game
-        function startGame() {
-            gameRunning = true;
-            player.score = 0;
-            ai.score = 0;
-            playerScoreEl.textContent = '0';
-            aiScoreEl.textContent = '0';
+        // Start game with selected mode
+        function startGame(mode) {
+            gameMode = mode;
+            menuScreen.style.display = 'none';
+            gameScreen.style.display = 'flex';
 
-            startScreen.style.display = 'none';
-            gameOverScreen.style.display = 'none';
+            // Lock orientation to portrait on mobile when starting game
+            if (isMobile && screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('portrait').catch(err => {
+                    console.log('Screen orientation lock failed:', err);
+                });
+            }
 
-            resetBall();
-            gameLoop();
+            // Update game title to show current winning score
+            document.getElementById('gameTitle').textContent = `First to ${WINNING_SCORE}`;
+
+            // Initialize bonus mode
+            if (mode === 'bonus') {
+                initializeBalls();
+                gameStartTime = Date.now();
+                // Force AI mode for bonus level
+                gameMode = 'ai';
+                isBonusMode = true;
+            } else {
+                isBonusMode = false;
+            }
+
+            // Update controls text based on mode
+            if (isMobile) {
+                // Portrait mode text
+                if (mode === 'ai') {
+                    controlsText.textContent = 'Slide your finger left/right to move | Tap to start';
+                    scoreDisplay.textContent = 'Player: 0 | AI: 0';
+                } else if (mode === 'bonus') {
+                    controlsText.textContent = 'Slide your finger left/right to move | Red ball = 1pt, White ball = 0.2pt! | Tap to start';
+                    scoreDisplay.textContent = 'Player: 0.0 | AI: 0.0';
+                } else {
+                    controlsText.textContent = 'Slide your finger to move your paddle | Tap to start';
+                    scoreDisplay.textContent = 'Player 1: 0 | Player 2: 0';
+                }
+
+                // Auto-enter fullscreen on mobile
+                setTimeout(() => {
+                    document.body.classList.add('zoomed');
+                }, 100);
+            } else {
+                // Landscape mode text
+                if (mode === 'ai') {
+                    controlsText.textContent = 'W/S or Arrow keys | Touch left half and swipe up/down | Tap to start';
+                    scoreDisplay.textContent = 'Player: 0 | AI: 0';
+                } else if (mode === 'bonus') {
+                    controlsText.textContent = 'W/S or Arrow keys | Touch left half and swipe up/down | Red ball = 1pt, White ball = 0.2pt! | Tap to start';
+                    scoreDisplay.textContent = 'Player: 0.0 | AI: 0.0';
+                } else {
+                    controlsText.textContent = 'W/S, Arrow Up/Down or I/K keys | Touch left/right half and swipe up/down | Tap to start';
+                    scoreDisplay.textContent = 'Player 1: 0 | Player 2: 0';
+                }
+            }
+
+            resetGame();
         }
 
-        // Event listeners
-        startBtn.addEventListener('click', startGame);
-        restartBtn.addEventListener('click', startGame);
+        // Show difficulty selection menu
+        function showDifficultyMenu() {
+            menuScreen.style.display = 'none';
+            difficultyScreen.style.display = 'flex';
+        }
 
-        // Prevent scrolling on mobile
-        document.body.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-        }, { passive: false });
+        // Start game with specific difficulty
+        function startGameWithDifficulty(mode, difficulty) {
+            aiDifficulty = difficulty;
+            difficultyScreen.style.display = 'none';
+            startGame(mode);
+        }
+
+        // Return to main menu from difficulty screen
+        function backToMainMenu() {
+            difficultyScreen.style.display = 'none';
+            playerNamesScreen.style.display = 'none';
+            settingsScreen.style.display = 'none';
+            menuScreen.style.display = 'block';
+        }
+
+        // Return to menu
+        function backToMenu() {
+            gameRunning = false;
+            gameMode = null;
+            isBonusMode = false;
+            menuScreen.style.display = 'block';
+            playerNamesScreen.style.display = 'none';
+            settingsScreen.style.display = 'none';
+            difficultyScreen.style.display = 'none';
+            gameScreen.style.display = 'none';
+
+            // Exit fullscreen when returning to menu
+            if (isMobile) {
+                document.body.classList.remove('zoomed');
+            }
+
+            resetGame();
+        }
+
+
+        // Load saved settings
+        loadSettings();
+
+        // Initialize game
+        drawGame();
     </script>
 </body>
 </html>

@@ -898,7 +898,8 @@
         function resizeCanvas() {
             if (isMobile) {
                 // Portrait mode: 400x700 aspect ratio
-                const maxWidth = Math.min(400, window.innerWidth - 20);
+                // Account for padding (10px each side) + border (2px each side) = 24px total
+                const maxWidth = Math.min(400, window.innerWidth - 24);
                 const maxHeight = Math.min(700, window.innerHeight - 200);
                 const aspectRatio = 400 / 700;
 

@@ -794,42 +794,31 @@
                 if (!touchData) continue;
 
                 const rect = canvas.getBoundingClientRect();
-                const touchX = touch.clientX - rect.left;
-                const touchY = touch.clientY - rect.top;
+                const touchX = (touch.clientX - rect.left) * (canvas.width / rect.width);
+                const touchY = (touch.clientY - rect.top) * (canvas.height / rect.height);
 
                 touchData.currentX = touchX;
                 touchData.currentY = touchY;
 
                 if (isMobile) {
-                    // Portrait mode: swipe left/right
-                    const deltaX = touchData.currentX - touchData.startX;
-                    const threshold = 10;
-
+                    // Portrait mode: direct positioning left/right
                     if (touchData.isTopHalf) {
-                        // Top half controls player 2 (AI)
+                        // Top half controls player 2
                         if (gameMode === 'player') {
-                            if (deltaX < -threshold) {
-                                keys.player2Up = true;
-                                keys.player2Down = false;
-                            } else if (deltaX > threshold) {
-                                keys.player2Down = true;
-                                keys.player2Up = false;
-                            } else {
-                                keys.player2Up = false;
-                                keys.player2Down = false;
+                            player2.x = touchX - player2.width / 2;
+                            // Keep paddle within canvas bounds
+                            if (player2.x < 0) player2.x = 0;
+                            if (player2.x + player2.width > canvas.width) {
+                                player2.x = canvas.width - player2.width;
                             }
                         }
                     } else {
                         // Bottom half controls player 1 (human player)
-                        if (deltaX < -threshold) {
-                            keys.player1Up = true;
-                            keys.player1Down = false;
-                        } else if (deltaX > threshold) {
-                            keys.player1Down = true;
-                            keys.player1Up = false;
-                        } else {
-                            keys.player1Up = false;
-                            keys.player1Down = false;
+                        player.x = touchX - player.width / 2;
+                        // Keep paddle within canvas bounds
+                        if (player.x < 0) player.x = 0;
+                        if (player.x + player.width > canvas.width) {
+                            player.x = canvas.width - player.width;
                         }
                     }
                 } else {
@@ -1846,13 +1835,13 @@
             if (isMobile) {
                 // Portrait mode text
                 if (mode === 'ai') {
-                    controlsText.textContent = 'Touch bottom half and swipe left/right to control | Tap to start';
+                    controlsText.textContent = 'Slide your finger left/right to move | Tap to start';
                     scoreDisplay.textContent = 'Player: 0 | AI: 0';
                 } else if (mode === 'bonus') {
-                    controlsText.textContent = 'Touch bottom half and swipe left/right to control | Red ball = 1pt, White ball = 0.2pt! | Tap to start';
+                    controlsText.textContent = 'Slide your finger left/right to move | Red ball = 1pt, White ball = 0.2pt! | Tap to start';
                     scoreDisplay.textContent = 'Player: 0.0 | AI: 0.0';
                 } else {
-                    controlsText.textContent = 'Touch bottom (Player 1) or top (Player 2) and swipe left/right | Tap to start';
+                    controlsText.textContent = 'Slide your finger to move your paddle | Tap to start';
                     scoreDisplay.textContent = 'Player 1: 0 | Player 2: 0';
                 }
 

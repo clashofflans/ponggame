@@ -46,8 +46,9 @@
                         0 0 40px #00bfff,
                         inset 0 0 10px rgba(0, 191, 255, 0.3);
             background: #000;
-            max-width: 100%;
+            max-width: calc(100% - 60px);
             height: auto;
+            margin: 0 auto;
         }
 
         .controls {
@@ -120,6 +121,8 @@
             display: none;
             flex-direction: column;
             align-items: center;
+            padding: 10px;
+            box-sizing: border-box;
         }
 
         .nickname-form {
@@ -289,6 +292,10 @@
 
         /* Mobile responsive styles */
         @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+
             h1 {
                 font-size: 1.8em;
                 margin-bottom: 15px;
@@ -321,15 +328,24 @@
             }
 
             #gameCanvas {
-                border: 2px solid #00ffff;
-                box-shadow: 0 0 8px #00ffff,
-                            0 0 15px #00ffff,
-                            0 0 25px #00ffff,
+                border: 3px solid #00ffff;
+                box-shadow: 0 0 6px #00ffff,
+                            0 0 12px #00ffff,
+                            0 0 20px #00ffff,
                             inset 0 0 8px rgba(0, 255, 255, 0.3);
+                max-width: calc(100% - 40px);
+            }
+
+            #gameScreen {
+                padding: 5px;
             }
         }
 
         @media (max-width: 480px) {
+            body {
+                padding: 3px;
+            }
+
             h1 {
                 font-size: 1.5em;
             }
@@ -345,6 +361,19 @@
 
             .controls p {
                 font-size: 0.8em;
+            }
+
+            #gameCanvas {
+                border: 2px solid #00ffff;
+                box-shadow: 0 0 5px #00ffff,
+                            0 0 10px #00ffff,
+                            0 0 15px #00ffff,
+                            inset 0 0 6px rgba(0, 255, 255, 0.3);
+                max-width: calc(100% - 30px);
+            }
+
+            #gameScreen {
+                padding: 3px;
             }
         }
 
@@ -401,11 +430,14 @@
 
         body.zoomed #gameCanvas {
             flex: 1;
-            max-width: none;
-            max-height: 100vh;
-            border: none;
+            max-width: calc(100% - 80px);
+            max-height: calc(100vh - 20px);
+            border: 3px solid #00ffff;
             border-radius: 0;
-            height: 100vh;
+            height: auto;
+            box-shadow: 0 0 10px #00ffff,
+                        0 0 20px #00ffff,
+                        inset 0 0 10px rgba(0, 255, 255, 0.3);
         }
 
         /* Landscape mode (desktop or landscape mobile) */
@@ -947,8 +979,9 @@
         function resizeCanvas() {
             if (isMobile) {
                 // Portrait mode: 400x700 aspect ratio
-                const maxWidth = Math.min(400, window.innerWidth - 20);
-                const maxHeight = Math.min(700, window.innerHeight - 200);
+                // Account for border (4px * 2) + glow effect (~40px * 2) + extra padding
+                const maxWidth = Math.min(400, window.innerWidth - 100);
+                const maxHeight = Math.min(700, window.innerHeight - 250);
                 const aspectRatio = 400 / 700;
 
                 let newWidth = maxWidth;
@@ -963,7 +996,7 @@
                 canvas.style.height = newHeight + 'px';
             } else {
                 // Landscape mode: 800x600 aspect ratio
-                const maxWidth = Math.min(800, window.innerWidth - 40);
+                const maxWidth = Math.min(800, window.innerWidth - 120);
                 const maxHeight = Math.min(600, window.innerHeight - 400);
                 const aspectRatio = 800 / 600;
 

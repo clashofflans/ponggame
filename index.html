@@ -386,7 +386,7 @@
             height: 100vh;
             background: #000;
             z-index: 9999;
-            flex-direction: row;
+            flex-direction: column;
             padding: 0;
             margin: 0;
         }
@@ -399,20 +399,18 @@
             display: none;
         }
 
-        /* Side scoreboard for mobile fullscreen */
+        /* Top scoreboard for mobile fullscreen */
         body.zoomed #score {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             justify-content: center;
             align-items: center;
             background: rgba(0, 0, 0, 0.8);
-            padding: 20px 10px;
+            padding: 15px 20px;
             font-size: 1.2em;
             font-weight: bold;
             color: #00ffff;
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            min-width: 60px;
+            min-height: 50px;
             order: -1;
             border: 3px solid #00ffff;
             box-shadow: 0 0 10px #00ffff,
@@ -423,20 +421,21 @@
 
         /* Mobile menu button in fullscreen */
         body.zoomed .mobile-menu-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 10000;
             display: flex;
             justify-content: center;
             align-items: center;
             background: rgba(0, 0, 0, 0.8);
             color: #00ffff;
             border: 3px solid #00ffff;
-            border-radius: 0;
-            padding: 15px 10px;
+            border-radius: 8px;
+            padding: 10px 15px;
             font-size: 1em;
             font-weight: bold;
             min-width: 60px;
-            order: -2;
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
             cursor: pointer;
             transition: all 0.3s;
             box-shadow: 0 0 10px #00ffff,
@@ -458,26 +457,27 @@
 
         body.zoomed #gameCanvas {
             flex: 1;
-            max-width: none;
-            max-height: 100vh;
+            max-width: 100vw;
+            max-height: calc(100vh - 100px);
             border: none;
             border-radius: 0;
-            height: 100vh;
+            width: 100vw;
+            height: calc(100vh - 100px);
         }
 
         /* Landscape mode (desktop or landscape mobile) */
         @media (min-width: 769px), (orientation: landscape) {
             body.zoomed #gameScreen {
-                justify-content: center;
+                justify-content: flex-start;
             }
 
             body.zoomed #gameCanvas {
-                width: auto;
-                height: 100vh;
+                width: 100vw;
+                height: calc(100vh - 100px);
             }
 
             body.zoomed #score {
-                display: none;
+                display: flex;
             }
         }
     </style>

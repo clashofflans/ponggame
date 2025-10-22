@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Pong Game</title>
     <style>
         * {
@@ -547,6 +548,13 @@
 
         // Mobile detection
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+
+        // Lock screen orientation to portrait on mobile
+        if (isMobile && screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('portrait').catch(err => {
+                console.log('Screen orientation lock not supported or failed:', err);
+            });
+        }
 
         // Set canvas dimensions based on device
         if (isMobile) {
@@ -1728,7 +1736,14 @@
             gameMode = mode;
             menuScreen.style.display = 'none';
             gameScreen.style.display = 'flex';
-            
+
+            // Lock orientation to portrait on mobile when starting game
+            if (isMobile && screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('portrait').catch(err => {
+                    console.log('Screen orientation lock failed:', err);
+                });
+            }
+
             // Update game title to show current winning score
             document.getElementById('gameTitle').textContent = `First to ${WINNING_SCORE}`;
 

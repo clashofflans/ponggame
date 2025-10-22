@@ -21,7 +21,7 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             font-family: 'Arial', sans-serif;
             color: white;
-            padding: 20px 0 10px 0;
+            padding: 20px 5px 10px 5px;
         }
 
         h1 {
@@ -909,8 +909,8 @@
         function resizeCanvas() {
             if (isMobile) {
                 // Portrait mode: 400x700 aspect ratio
-                // Account for border (2px each side) = 4px total
-                const maxWidth = Math.min(400, window.innerWidth - 4);
+                // Account for border (2px each side) = 4px + padding (5px each side) = 10px total = 14px
+                const maxWidth = Math.min(400, window.innerWidth - 14);
                 const maxHeight = Math.min(700, window.innerHeight - 200);
                 const aspectRatio = 400 / 700;
 
@@ -926,8 +926,8 @@
                 canvas.style.height = newHeight + 'px';
             } else {
                 // Landscape mode: 800x600 aspect ratio
-                // Account for border (4px each side) = 8px total
-                const maxWidth = Math.min(800, window.innerWidth - 8);
+                // Account for border (4px each side) = 8px + padding (5px each side) = 10px total = 18px
+                const maxWidth = Math.min(800, window.innerWidth - 18);
                 const maxHeight = Math.min(600, window.innerHeight - 400);
                 const aspectRatio = 800 / 600;
 

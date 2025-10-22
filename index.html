@@ -287,6 +287,11 @@
             display: none !important;
         }
 
+        /* Mobile menu button - hidden by default */
+        .mobile-menu-btn {
+            display: none;
+        }
+
         /* Mobile responsive styles */
         @media (max-width: 768px) {
             h1 {
@@ -399,6 +404,41 @@
                         inset 0 0 10px rgba(0, 255, 255, 0.3);
         }
 
+        /* Mobile menu button in fullscreen */
+        body.zoomed .mobile-menu-btn {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ffff;
+            border: 3px solid #00ffff;
+            border-radius: 0;
+            padding: 15px 10px;
+            font-size: 1em;
+            font-weight: bold;
+            min-width: 60px;
+            order: -2;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px #00ffff,
+                        0 0 20px #00ffff,
+                        0 0 30px #00ffff,
+                        inset 0 0 10px rgba(0, 255, 255, 0.3);
+            margin: 0;
+        }
+
+        body.zoomed .mobile-menu-btn:hover,
+        body.zoomed .mobile-menu-btn:active {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 15px #00ffff,
+                        0 0 30px #00ffff,
+                        0 0 45px #00ffff,
+                        inset 0 0 15px rgba(0, 255, 255, 0.5);
+            transform: none;
+        }
+
         body.zoomed #gameCanvas {
             flex: 1;
             max-width: none;
@@ -495,6 +535,7 @@
     <div id="gameScreen">
         <canvas id="gameCanvas"></canvas>
         <div id="score">Player 1: 0 | Player 2: 0</div>
+        <button id="mobileMenuBtn" class="mobile-menu-btn">Menu</button>
         <div class="controls">
             <p id="controlsText">Player 1 (Left): W/S keys | Player 2 (Right): Arrow Up/Down or I/K keys</p>
             <p>Press Space to start/pause</p>
@@ -542,6 +583,7 @@
         const hardBtn = document.getElementById('hardBtn');
         const backToMainBtn = document.getElementById('backToMainBtn');
         const backBtn = document.getElementById('backBtn');
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
         const controlsText = document.getElementById('controlsText');
         const leftTouchArea = document.getElementById('leftTouchArea');
         const rightTouchArea = document.getElementById('rightTouchArea');
@@ -933,6 +975,7 @@
         hardBtn.addEventListener('click', () => startGameWithDifficulty('ai', 'hard'));
         backToMainBtn.addEventListener('click', backToMainMenu);
         backBtn.addEventListener('click', backToMenu);
+        mobileMenuBtn.addEventListener('click', backToMenu);
 
         // Draw functions
         function drawRect(x, y, width, height, color) {

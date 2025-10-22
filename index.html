@@ -233,6 +233,22 @@
             box-shadow: 0 0 10px #00bfff;
         }
 
+        #backgroundColorInput {
+            width: 150px;
+            height: 50px;
+            border: 2px solid #00bfff;
+            border-radius: 8px;
+            cursor: pointer;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px;
+        }
+
+        #backgroundColorInput:focus {
+            outline: none;
+            border-color: #00ffff;
+            box-shadow: 0 0 10px #00bfff;
+        }
+
         .setting-description {
             font-size: 0.9em;
             color: rgba(255, 255, 255, 0.7);
@@ -515,6 +531,11 @@
                 <input type="number" id="winningScoreInput" min="1" max="50" value="6">
                 <p class="setting-description">First to reach this score wins</p>
             </div>
+            <div class="setting-group">
+                <label for="backgroundColorInput">Background Color:</label>
+                <input type="color" id="backgroundColorInput" value="#667eea">
+                <p class="setting-description">Choose your background color</p>
+            </div>
         </div>
         <button id="saveSettingsBtn" class="menu-btn">Save Settings</button>
         <button id="backToMainFromSettingsBtn">Back to Main Menu</button>
@@ -572,6 +593,7 @@
         const startPlayerGameBtn = document.getElementById('startPlayerGameBtn');
         const backToMainFromPlayersBtn = document.getElementById('backToMainFromPlayersBtn');
         const winningScoreInput = document.getElementById('winningScoreInput');
+        const backgroundColorInput = document.getElementById('backgroundColorInput');
         const saveSettingsBtn = document.getElementById('saveSettingsBtn');
         const backToMainFromSettingsBtn = document.getElementById('backToMainFromSettingsBtn');
         const vsPlayerBtn = document.getElementById('vsPlayerBtn');
@@ -1630,8 +1652,21 @@
                 WINNING_SCORE = parseInt(savedWinningScore);
                 winningScoreInput.value = WINNING_SCORE;
             }
+
+            // Load and apply background color
+            const savedBackgroundColor = localStorage.getItem('pongBackgroundColor');
+            if (savedBackgroundColor) {
+                backgroundColorInput.value = savedBackgroundColor;
+                applyBackgroundColor(savedBackgroundColor);
+            }
+
             // Always update the title to show the current winning score
             document.getElementById('gameTitle').textContent = `First to ${WINNING_SCORE}`;
+        }
+
+        // Apply background color to body
+        function applyBackgroundColor(color) {
+            document.body.style.background = color;
         }
 
         function saveSettings() {
@@ -1643,7 +1678,12 @@
                 // Update the game title to reflect the new winning score
                 document.getElementById('gameTitle').textContent = `First to ${WINNING_SCORE}`;
             }
-            
+
+            // Save and apply background color
+            const newBackgroundColor = backgroundColorInput.value;
+            localStorage.setItem('pongBackgroundColor', newBackgroundColor);
+            applyBackgroundColor(newBackgroundColor);
+
             // Hide settings screen and show menu
             settingsScreen.style.display = 'none';
             menuScreen.style.display = 'block';

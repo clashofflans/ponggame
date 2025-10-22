@@ -488,10 +488,13 @@
 
     <!-- Nickname Input Screen -->
     <div id="nicknameScreen">
-        <h2>Enter Your Nickname</h2>
+        <h2 id="nicknameTitle">Enter Your Nickname</h2>
         <div class="nickname-form">
             <input type="text" id="nicknameInput" placeholder="Enter your nickname..." maxlength="15">
             <button class="menu-btn" id="continueBtn">Continue</button>
+            <div style="margin: 10px 0; color: rgba(255,255,255,0.7);">— or —</div>
+            <button class="menu-btn" id="wildcardLoginBtn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">Login with Wildcard.id</button>
+            <button class="menu-btn" id="logoutBtn" style="background: rgba(255,255,255,0.2); color: white; display: none;">Logout</button>
         </div>
     </div>
 
@@ -577,6 +580,15 @@
     </div>
 
     <script>
+        // OAuth Configuration for wildcard.id
+        const OAUTH_CONFIG = {
+            clientId: '9154dac6-2212-4609-8650-fbeac2e70877',
+            authorizationEndpoint: 'https://wildcard.id/oauth/authorize',
+            tokenEndpoint: 'https://wildcard.id/oauth/token',
+            redirectUri: window.location.origin + window.location.pathname,
+            scope: 'openid profile'
+        };
+
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreDisplay = document.getElementById('score');
@@ -613,6 +625,130 @@
 
         // Mobile detection
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+
+        // OAuth Helper Functions
+        function generateRandomString(length) {
+            const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+            let result = '';
+            const randomValues = new Uint8Array(length);
+            crypto.getRandomValues(randomValues);
+            for (let i = 0; i < length; i++) {
+                result += charset[randomValues[i] % charset.length];
+            }
+            return result;
+        }
+
+        async function generateCodeChallenge(codeVerifier) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(codeVerifier);
+            const hash = await crypto.subtle.digest('SHA-256', data);
+            const base64 = btoa(String.fromCharCode(...new Uint8Array(hash)));
+            return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        }
+
+        async function initiateOAuthLogin() {
+            // Generate PKCE code verifier and challenge
+            const codeVerifier = generateRandomString(128);
+            const codeChallenge = await generateCodeChallenge(codeVerifier);
+
+            // Store code verifier for later use
+            sessionStorage.setItem('oauth_code_verifier', codeVerifier);
+            sessionStorage.setItem('oauth_state', generateRandomString(32));
+
+            // Build authorization URL
+            const params = new URLSearchParams({
+                client_id: OAUTH_CONFIG.clientId,
+                redirect_uri: OAUTH_CONFIG.redirectUri,
+                response_type: 'code',
+                scope: OAUTH_CONFIG.scope,
+                code_challenge: codeChallenge,
+                code_challenge_method: 'S256',
+                state: sessionStorage.getItem('oauth_state')
+            });
+
+            const authUrl = `${OAUTH_CONFIG.authorizationEndpoint}?${params.toString()}`;
+            window.location.href = authUrl;
+        }
+
+        async function handleOAuthCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const state = urlParams.get('state');
+
+            if (!code) return false;
+
+            // Verify state to prevent CSRF
+            const storedState = sessionStorage.getItem('oauth_state');
+            if (state !== storedState) {
+                console.error('OAuth state mismatch');
+                return false;
+            }
+
+            const codeVerifier = sessionStorage.getItem('oauth_code_verifier');
+            if (!codeVerifier) {
+                console.error('Code verifier not found');
+                return false;
+            }
+
+            try {
+                // Exchange code for token
+                const tokenResponse = await fetch(OAUTH_CONFIG.tokenEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        grant_type: 'authorization_code',
+                        code: code,
+                        redirect_uri: OAUTH_CONFIG.redirectUri,
+                        client_id: OAUTH_CONFIG.clientId,
+                        code_verifier: codeVerifier
+                    })
+                });
+
+                if (!tokenResponse.ok) {
+                    throw new Error('Token exchange failed');
+                }
+
+                const tokenData = await tokenResponse.json();
+
+                // Parse ID token to get user info (JWT format)
+                if (tokenData.id_token) {
+                    const idTokenPayload = JSON.parse(atob(tokenData.id_token.split('.')[1]));
+                    const userName = idTokenPayload.name || idTokenPayload.sub || 'Player';
+
+                    // Store user info
+                    localStorage.setItem('oauth_user', JSON.stringify({
+                        name: userName,
+                        sub: idTokenPayload.sub
+                    }));
+                    localStorage.setItem('oauth_access_token', tokenData.access_token);
+                }
+
+                // Clean up
+                sessionStorage.removeItem('oauth_code_verifier');
+                sessionStorage.removeItem('oauth_state');
+
+                // Remove OAuth params from URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+
+                return true;
+            } catch (error) {
+                console.error('OAuth error:', error);
+                return false;
+            }
+        }
+
+        function getLoggedInUser() {
+            const userJson = localStorage.getItem('oauth_user');
+            return userJson ? JSON.parse(userJson) : null;
+        }
+
+        function logoutUser() {
+            localStorage.removeItem('oauth_user');
+            localStorage.removeItem('oauth_access_token');
+            window.location.reload();
+        }
 
         // Lock screen orientation to portrait on mobile
         if (isMobile && screen.orientation && screen.orientation.lock) {
@@ -948,6 +1084,50 @@
         // Initial resize and add listener
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
+
+        // OAuth initialization - check for callback and update UI
+        async function initializeOAuth() {
+            const loggedInUser = getLoggedInUser();
+            const wildcardLoginBtn = document.getElementById('wildcardLoginBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const nicknameTitle = document.getElementById('nicknameTitle');
+
+            // Handle OAuth callback if present
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('code')) {
+                const success = await handleOAuthCallback();
+                if (success) {
+                    const user = getLoggedInUser();
+                    if (user) {
+                        playerNickname = user.name;
+                        nicknameInput.value = user.name;
+                    }
+                }
+            }
+
+            // Update UI based on login state
+            const currentUser = getLoggedInUser();
+            if (currentUser) {
+                nicknameTitle.textContent = `Welcome, ${currentUser.name}!`;
+                nicknameInput.value = currentUser.name;
+                nicknameInput.disabled = true;
+                wildcardLoginBtn.style.display = 'none';
+                logoutBtn.style.display = 'block';
+                playerNickname = currentUser.name;
+            } else {
+                nicknameTitle.textContent = 'Enter Your Nickname';
+                nicknameInput.disabled = false;
+                wildcardLoginBtn.style.display = 'block';
+                logoutBtn.style.display = 'none';
+            }
+        }
+
+        // OAuth event listeners
+        document.getElementById('wildcardLoginBtn').addEventListener('click', initiateOAuthLogin);
+        document.getElementById('logoutBtn').addEventListener('click', logoutUser);
+
+        // Initialize OAuth on page load
+        initializeOAuth();
 
         // Nickname input event listeners
         continueBtn.addEventListener('click', saveNickname);

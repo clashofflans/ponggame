@@ -482,6 +482,7 @@
             <button class="menu-btn" id="vsAIBtn">Play vs AI</button>
             <button class="menu-btn" id="bonusBtn">Bonus Level</button>
             <button class="menu-btn" id="settingsBtn">Settings</button>
+            <button class="menu-btn" id="menuLogoutBtn" style="background: rgba(255,255,255,0.2); color: white; display: none; margin-top: 20px;">Logout</button>
         </div>
     </div>
 
@@ -1064,6 +1065,7 @@
             const loggedInUser = getLoggedInUser();
             const wildcardLoginBtn = document.getElementById('wildcardLoginBtn');
             const logoutBtn = document.getElementById('logoutBtn');
+            const menuLogoutBtn = document.getElementById('menuLogoutBtn');
             const nicknameTitle = document.getElementById('nicknameTitle');
 
             // Handle OAuth callback if present
@@ -1084,6 +1086,7 @@
                 nicknameTitle.textContent = `Welcome, ${currentUser.name}!`;
                 wildcardLoginBtn.style.display = 'none';
                 logoutBtn.style.display = 'block';
+                menuLogoutBtn.style.display = 'block';
                 playerNickname = currentUser.name;
                 // Automatically show menu after successful login
                 nicknameScreen.style.display = 'none';
@@ -1092,12 +1095,14 @@
                 nicknameTitle.textContent = 'Login to Play';
                 wildcardLoginBtn.style.display = 'block';
                 logoutBtn.style.display = 'none';
+                menuLogoutBtn.style.display = 'none';
             }
         }
 
         // OAuth event listeners
         document.getElementById('wildcardLoginBtn').addEventListener('click', initiateOAuthLogin);
         document.getElementById('logoutBtn').addEventListener('click', logoutUser);
+        document.getElementById('menuLogoutBtn').addEventListener('click', logoutUser);
 
         // Initialize OAuth on page load
         initializeOAuth();

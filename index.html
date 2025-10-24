@@ -131,27 +131,6 @@
             margin-top: 30px;
         }
 
-        #nicknameInput {
-            padding: 15px 20px;
-            font-size: 1.2em;
-            border: 2px solid #00bfff;
-            border-radius: 8px;
-            background: rgba(0, 0, 0, 0.3);
-            color: white;
-            text-align: center;
-            width: 300px;
-            max-width: 90%;
-        }
-
-        #nicknameInput:focus {
-            outline: none;
-            border-color: #00ffff;
-            box-shadow: 0 0 10px #00bfff;
-        }
-
-        #nicknameInput::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
 
         .player-names-form {
             display: flex;
@@ -488,11 +467,8 @@
 
     <!-- Nickname Input Screen -->
     <div id="nicknameScreen">
-        <h2 id="nicknameTitle">Enter Your Nickname</h2>
+        <h2 id="nicknameTitle">Login to Play</h2>
         <div class="nickname-form">
-            <input type="text" id="nicknameInput" placeholder="Enter your nickname..." maxlength="15">
-            <button class="menu-btn" id="continueBtn">Continue</button>
-            <div style="margin: 10px 0; color: rgba(255,255,255,0.7);">— or —</div>
             <button class="menu-btn" id="wildcardLoginBtn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">Login with Wildcard.id</button>
             <button class="menu-btn" id="logoutBtn" style="background: rgba(255,255,255,0.2); color: white; display: none;">Logout</button>
         </div>
@@ -599,8 +575,6 @@
         const settingsScreen = document.getElementById('settingsScreen');
         const difficultyScreen = document.getElementById('difficultyScreen');
         const gameScreen = document.getElementById('gameScreen');
-        const nicknameInput = document.getElementById('nicknameInput');
-        const continueBtn = document.getElementById('continueBtn');
         const player1Input = document.getElementById('player1Input');
         const player2Input = document.getElementById('player2Input');
         const startPlayerGameBtn = document.getElementById('startPlayerGameBtn');
@@ -1100,7 +1074,6 @@
                     const user = getLoggedInUser();
                     if (user) {
                         playerNickname = user.name;
-                        nicknameInput.value = user.name;
                     }
                 }
             }
@@ -1109,14 +1082,14 @@
             const currentUser = getLoggedInUser();
             if (currentUser) {
                 nicknameTitle.textContent = `Welcome, ${currentUser.name}!`;
-                nicknameInput.value = currentUser.name;
-                nicknameInput.disabled = true;
                 wildcardLoginBtn.style.display = 'none';
                 logoutBtn.style.display = 'block';
                 playerNickname = currentUser.name;
+                // Automatically show menu after successful login
+                nicknameScreen.style.display = 'none';
+                menuScreen.style.display = 'block';
             } else {
-                nicknameTitle.textContent = 'Enter Your Nickname';
-                nicknameInput.disabled = false;
+                nicknameTitle.textContent = 'Login to Play';
                 wildcardLoginBtn.style.display = 'block';
                 logoutBtn.style.display = 'none';
             }
@@ -1128,14 +1101,6 @@
 
         // Initialize OAuth on page load
         initializeOAuth();
-
-        // Nickname input event listeners
-        continueBtn.addEventListener('click', saveNickname);
-        nicknameInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                saveNickname();
-            }
-        });
 
         // Player names input event listeners
         startPlayerGameBtn.addEventListener('click', savePlayerNames);
@@ -1791,19 +1756,6 @@
                 ball.dx = (Math.random() > 0.5 ? 1 : -1) * ball.speed;
                 ball.dy = (Math.random() * 2 - 1) * ball.speed;
             }
-        }
-
-        function saveNickname() {
-            const nickname = nicknameInput.value.trim();
-            if (nickname.length > 0) {
-                playerNickname = nickname;
-            } else {
-                playerNickname = 'Player';
-            }
-            
-            // Hide nickname screen and show menu
-            nicknameScreen.style.display = 'none';
-            menuScreen.style.display = 'block';
         }
 
         function showPlayerNamesMenu() {
